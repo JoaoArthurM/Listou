@@ -69,13 +69,18 @@
     --destructive: 4 74% 44%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Cartão de destaque: escuro nos dois temas, como o cartão de receita da referência. */
-    --cartao-escuro: 24 16% 8%;
-    --cartao-escuro-luz: 26 34% 24%;
-
-    --brilho: 22 68% 88%; /* halo pêssego */
     --sombra: 28 40% 18%;
-    --colmeia-opacidade: 0.7;
+
+    /*
+     * Colmeia de fundo: cada peça é um nada mais clara no topo e as juntas ficam
+     * um tom abaixo da folha. É para quase não se ver; quem quiser mais presença
+     * sobe --colmeia-forca e o alfa de --colmeia-junta.
+     */
+    --colmeia-luz: 0 0% 100%;
+    --colmeia-forca: 0.2;
+    --colmeia-junta: 32 40% 30% / 0.035;
+    --colmeia-relevo: 44 70% 97.5%;
+    --colmeia-sombra: 0.07;
 
     --raio-folha: 1.75rem;
     --raio-cartao: 1.375rem;
@@ -104,12 +109,13 @@
     --destructive: 4 80% 64%;
     --destructive-foreground: 0 0% 7%;
 
-    --cartao-escuro: 30 10% 13%;
-    --cartao-escuro-luz: 26 38% 30%;
-
-    --brilho: 18 70% 22%;
     --sombra: 0 0% 0%;
-    --colmeia-opacidade: 0.05;
+
+    --colmeia-luz: 40 30% 96%;
+    --colmeia-forca: 0.014;
+    --colmeia-junta: 0 0% 0% / 0.11;
+    --colmeia-relevo: 38 7% 9.5%;
+    --colmeia-sombra: 0.35;
 
     color-scheme: dark;
   }
@@ -199,50 +205,48 @@
     border-radius: 0;
   }
 
-  /* Cartão de destaque escuro, com o brilho quente no canto como numa foto. */
-  .cartao-escuro {
-    color: #fff;
-    background-color: hsl(var(--cartao-escuro));
-    background-image: radial-gradient(
-      120% 85% at 85% 0%,
-      hsl(var(--cartao-escuro-luz)) 0%,
-      hsl(var(--cartao-escuro) / 0) 62%
-    );
-  }
-
   /* Valor em reais ou quantidade: algarismos de largura fixa, sem quebrar no meio. */
   .dinheiro {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
-  /* Colmeia de fundo da referência, bem sutil, concentrada no topo da folha. */
-  .colmeia {
+  /*
+   * Cartão com foto (a lista em destaque, a demonstração do login). O véu
+   * escuro existe para o texto branco ter contraste sobre qualquer foto; não
+   * é efeito decorativo.
+   */
+  .cartao-foto {
     position: relative;
-    isolation: isolate;
+    overflow: hidden;
+    color: #fff;
+    background-color: #17130f;
   }
 
-  .colmeia::before {
+  .cartao-foto > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cartao-foto::after {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='97' height='168' viewBox='0 0 97 168'%3E%3Cpath d='M48.5 0 97 28v56L48.5 112 0 84V28ZM48.5 112v56' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
-    background-size: 97px 168px;
-    background-position: 50% -28px;
-    opacity: var(--colmeia-opacidade);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 62%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 62%);
+    background-image: linear-gradient(
+      to top,
+      rgb(10 8 6 / 0.92) 0%,
+      rgb(10 8 6 / 0.62) 38%,
+      rgb(10 8 6 / 0.3) 72%,
+      rgb(10 8 6 / 0.42) 100%
+    );
   }
 
-  /* Halo pêssego atrás do conteúdo principal (cartão de destaque, login). */
-  .halo {
-    background-image: radial-gradient(
-      70% 46% at 50% 34%,
-      hsl(var(--brilho) / 0.9) 0%,
-      hsl(var(--brilho) / 0) 100%
-    );
+  .cartao-foto > :not(img) {
+    position: relative;
+    z-index: 1;
   }
 }
 

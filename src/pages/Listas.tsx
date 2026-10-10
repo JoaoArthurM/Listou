@@ -9,6 +9,7 @@ import { useUsuario } from '@/hooks/sessao'
 import { useConexao } from '@/hooks/useConexao'
 import { useListas, usePerfil } from '@/hooks/useListas'
 import { formatarReais } from '@/lib/dinheiro'
+import { fotoDaLista } from '@/lib/fotos'
 import { navegar } from '@/lib/rota'
 import { cn, listarNomes, plural, primeiroNome, saudacao } from '@/lib/utils'
 import type { ListaComResumo } from '@/types/app'
@@ -24,32 +25,33 @@ function companhia(lista: ListaComResumo, meuId: string): string | null {
   return outros.length > 0 ? `com ${listarNomes(outros)}` : null
 }
 
-/** A lista mais recente, no cartão escuro com o nome em serifada, como o cartão de receita da referência. */
+/** A lista mais recente no cartão com foto e nome em serifada, como o cartão de receita da referência. */
 function CartaoDestaque({ lista, meuId, sozinho }: { lista: ListaComResumo; meuId: string; sozinho: boolean }) {
   const { resumo } = lista
   const com = companhia(lista, meuId)
   return (
     <a href={`/lista/${lista.id}`} onClick={(e) => abrir(e, lista.id)} className="group relative block rounded-[1.75rem]">
-      {/* Cartões "de trás", levemente girados, que dão o empilhado da referência. */}
-      <span aria-hidden className="absolute inset-0 origin-bottom -rotate-[4deg] rounded-[1.75rem] bg-foreground/15 dark:bg-white/[0.06]" />
-      <span aria-hidden className="absolute inset-0 origin-bottom rotate-[2.5deg] rounded-[1.75rem] bg-foreground/30 dark:bg-white/10" />
+      {/* Os cartões "de trás", levemente girados, que formam a pilha da referência. */}
+      <span aria-hidden className="absolute inset-0 origin-bottom -rotate-[4deg] rounded-[1.75rem] bg-[#8d867c] dark:bg-[#3a3631]" />
+      <span aria-hidden className="absolute inset-0 origin-bottom rotate-[2.5deg] rounded-[1.75rem] bg-[#57514a] dark:bg-[#2b2824]" />
       <article
         className={cn(
-          'cartao-escuro relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] p-5 shadow-flutuante transition-transform duration-300 ease-saida group-active:scale-[0.985]',
-          sozinho ? 'min-h-[24rem]' : 'min-h-[17.5rem]',
+          'cartao-foto flex flex-col justify-between rounded-[1.75rem] p-5 shadow-flutuante transition-transform duration-300 ease-saida group-active:scale-[0.985]',
+          sozinho ? 'min-h-[25rem]' : 'min-h-[19rem]',
         )}
       >
+        <img src={fotoDaLista(lista.id)} alt="" decoding="async" />
         <div className="flex flex-wrap items-center gap-2">
           {lista.mercado ? (
-            <span className="max-w-full truncate rounded-full bg-white/[0.16] px-3.5 py-1.5 text-[0.9375rem]">{lista.mercado}</span>
+            <span className="max-w-full truncate rounded-full bg-white/20 px-3.5 py-1.5 text-[0.9375rem] backdrop-blur-sm">{lista.mercado}</span>
           ) : null}
           <span className="dinheiro rounded-full bg-destaque px-3.5 py-1.5 text-[0.9375rem] font-medium text-destaque-foreground">
             {resumo.itens_total === 0 ? 'Lista vazia' : `${resumo.itens_comprados} de ${plural(resumo.itens_total, 'item', 'itens')}`}
           </span>
         </div>
         <div>
-          <h2 className="line-clamp-3 break-words font-display text-[3.25rem] italic leading-[0.95] tracking-[-0.01em]">{lista.nome}</h2>
-          <p className="dinheiro mt-3 whitespace-normal text-[1.0625rem] text-white/80">
+          <h2 className="line-clamp-3 break-words font-display text-[3.5rem] italic leading-[0.92] tracking-[-0.01em]">{lista.nome}</h2>
+          <p className="dinheiro mt-3 whitespace-normal text-[1.0625rem] text-white/85">
             {formatarReais(resumo.total_centavos)} no carrinho{com ? ` · ${com}` : ''}
           </p>
         </div>
@@ -58,6 +60,7 @@ function CartaoDestaque({ lista, meuId, sozinho }: { lista: ListaComResumo; meuI
   )
 }
 
+/** As demais listas, no formato das linhas da agenda da referência: miniatura, nome e detalhe. */
 function LinhaLista({ lista, meuId }: { lista: ListaComResumo; meuId: string }) {
   const { resumo } = lista
   const detalhe = [
@@ -68,8 +71,13 @@ function LinhaLista({ lista, meuId }: { lista: ListaComResumo; meuId: string }) 
     .filter(Boolean)
     .join(' · ')
   return (
-    <li className="border-b border-border last:border-b-0">
-      <a href={`/lista/${lista.id}`} onClick={(e) => abrir(e, lista.id)} className="flex min-h-[4.25rem] items-center gap-3 rounded-cartao px-4 py-2.5">
+    <li>
+      <a
+        href={`/lista/${lista.id}`}
+        onClick={(e) => abrir(e, lista.id)}
+        className="flex min-h-[4.75rem] items-center gap-3.5 rounded-cartao bg-card p-2.5 pr-3 shadow-cartao"
+      >
+        <img src={fotoDaLista(lista.id)} alt="" decoding="async" className="size-14 shrink-0 rounded-2xl object-cover" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[1.0625rem] font-medium">{lista.nome}</span>
           <span className="dinheiro block truncate text-[0.9375rem] text-muted-foreground">{detalhe}</span>
@@ -97,10 +105,10 @@ export function Listas() {
       : plural(listas.length, 'lista ativa', 'listas ativas')
 
   return (
-    <Moldura className="colmeia" rodape={<NavInferior atual="listas" />}>
+    <Moldura rodape={<NavInferior atual="listas" />}>
       <header className="flex shrink-0 items-start justify-between gap-4 px-5 pt-6">
         <div className="min-w-0">
-          <h1 className="truncate text-[1.375rem] font-semibold leading-tight tracking-[-0.02em]">
+          <h1 className="truncate text-[1.5rem] font-medium leading-tight tracking-[-0.025em]">
             {saudacao()}
             {nome ? `, ${nome}` : ''}!
           </h1>
@@ -111,11 +119,11 @@ export function Listas() {
         </Button>
       </header>
 
-      <div className="halo min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-7">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-7">
         {estado !== 'online' ? <StatusConexao className="mb-4" /> : null}
 
         {isPending ? (
-          <div aria-busy className="h-[17.5rem] animate-pulso rounded-[1.75rem] bg-muted" />
+          <div aria-busy className="h-[19rem] animate-pulso rounded-[1.75rem] bg-muted" />
         ) : isError && !listas ? (
           <div className="pt-8">
             <p className="text-[1.0625rem] leading-snug">Não deu para carregar suas listas. Confira a conexão.</p>
@@ -125,11 +133,11 @@ export function Listas() {
           </div>
         ) : destaque ? (
           <>
-            <div className="px-1 pb-2 pt-1">
+            <div className="px-1.5 pb-2 pt-1">
               <CartaoDestaque lista={destaque} meuId={usuario.id} sozinho={outras.length === 0} />
             </div>
             {outras.length > 0 ? (
-              <ul className="mt-7 rounded-cartao bg-card shadow-cartao">
+              <ul className="mt-8 space-y-2.5">
                 {outras.map((lista) => (
                   <LinhaLista key={lista.id} lista={lista} meuId={usuario.id} />
                 ))}
@@ -138,14 +146,14 @@ export function Listas() {
           </>
         ) : (
           <div className="pt-10">
-            <p className="font-display text-[3.25rem] italic leading-[0.95]">Vamos às compras?</p>
+            <p className="font-display text-[3.5rem] italic leading-[0.92]">Vamos às compras?</p>
             <p className="mt-4 max-w-[20rem] text-[1.0625rem] leading-snug text-muted-foreground">
               Crie a lista, convide quem compra com você e fotografe as etiquetas no mercado. O total do carrinho aparece nos dois celulares.
             </p>
             <button
               type="button"
               onClick={() => setFolha('codigo')}
-              className="mt-7 flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-primary/70 px-4 text-left text-[1.0625rem] font-medium text-primary-texto"
+              className="mt-7 flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-primary/70 bg-card/60 px-4 text-left text-[1.0625rem] font-medium text-primary-texto"
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
                 <Plus aria-hidden className="size-4" strokeWidth={3} />

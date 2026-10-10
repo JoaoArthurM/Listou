@@ -21,8 +21,8 @@ export function Convite({ codigo }: { codigo: string }) {
   }, [codigo, mutate])
 
   return (
-    <Moldura className="colmeia">
-      <div className="halo flex-1 px-6 pt-16">
+    <Moldura>
+      <div className="flex-1 px-6 pt-16">
         {erro ? (
           <>
             <h1 className="font-display text-[2.75rem] italic leading-[0.95]">Convite não aceito</h1>

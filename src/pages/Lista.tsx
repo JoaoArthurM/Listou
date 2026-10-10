@@ -32,7 +32,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
 
   if (!lista) {
     return (
-      <Moldura className="colmeia">
+      <Moldura>
         <div className="px-3 pt-3">
           <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => voltar('/')}>
             <ArrowLeft className="size-6" />
@@ -67,14 +67,14 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
     .join(' • ')
 
   return (
-    <Moldura className="colmeia" rodape={<TotalBar resumo={resumo} orcamentoCentavos={lista.orcamento_centavos} />}>
+    <Moldura rodape={<TotalBar resumo={resumo} orcamentoCentavos={lista.orcamento_centavos} />}>
       <header className="shrink-0 px-3 pt-3">
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => voltar(finalizada ? '/historico' : '/')}>
             <ArrowLeft className="size-6" />
           </Button>
           <div className="min-w-0 flex-1 text-center">
-            <h1 className="truncate text-[1.1875rem] font-semibold leading-tight tracking-[-0.02em]">{lista.nome}</h1>
+            <h1 className="truncate text-[1.25rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
             <p className="dinheiro truncate text-[0.9375rem] text-muted-foreground">{subtitulo}</p>
           </div>
           <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => setOpcoesAbertas(true)}>

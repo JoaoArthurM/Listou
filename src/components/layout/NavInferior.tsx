@@ -31,18 +31,15 @@ export function NavInferior({ atual }: { atual: Aba }) {
             aria-current={ativa ? 'page' : undefined}
             onClick={(evento) => ir(evento, rota)}
             className={cn(
-              'flex min-h-[3.25rem] min-w-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl text-[0.6875rem] transition-colors duration-200',
-              ativa ? 'text-moldura-foreground' : 'text-moldura-muted hover:text-moldura-foreground',
+              'flex min-h-[3.5rem] min-w-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl text-xs transition-colors duration-200',
+              ativa ? 'font-medium text-moldura-foreground' : 'text-moldura-muted hover:text-moldura-foreground',
             )}
           >
-            <span
-              className={cn(
-                'grid size-8 place-items-center rounded-full transition-[background-color,box-shadow] duration-300 ease-saida',
-                ativa && 'bg-primary text-primary-foreground shadow-[0_0_22px_hsl(var(--primary)/0.55)]',
-              )}
-            >
-              <Icone aria-hidden className="size-[1.375rem]" strokeWidth={ativa ? 2 : 1.6} />
-            </span>
+            <Icone
+              aria-hidden
+              className={cn('size-[1.625rem] transition-colors duration-200', ativa && 'text-primary')}
+              strokeWidth={ativa ? 2 : 1.5}
+            />
             {rotulo}
           </a>
         )

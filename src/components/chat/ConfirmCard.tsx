@@ -34,7 +34,7 @@ const NOVO = 'novo'
 function Resolvido({ resultado }: { resultado: ResultadoCompra }) {
   return (
     <div className="rounded-cartao bg-card p-4 shadow-cartao">
-      <p className="flex items-center gap-2 text-[1.0625rem] font-semibold">
+      <p className="flex items-center gap-2 text-[1.0625rem] font-medium">
         <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-white">
           <Check aria-hidden className="size-3" strokeWidth={3.5} />
         </span>
@@ -125,7 +125,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
   return (
     <div className="rounded-cartao bg-card p-4 shadow-cartao">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 pt-1 text-[1.0625rem] font-semibold leading-snug">{extracao.produto}</h3>
+        <h3 className="min-w-0 pt-1 text-[1.125rem] font-medium leading-snug">{extracao.produto}</h3>
         <Button
           variant="ghost"
           size="icon"
@@ -188,7 +188,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
               className={cn(
                 'dinheiro grid h-14 min-w-12 place-items-center rounded-full border px-3 text-[1.0625rem] font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-saida',
                 escolhido
-                  ? 'border-primary bg-primary text-primary-foreground shadow-acento'
+                  ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground',
               )}
             >

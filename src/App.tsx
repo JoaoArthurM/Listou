@@ -33,8 +33,8 @@ function guardarConvite(codigo: string | null) {
 
 function Aviso({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <Moldura className="colmeia">
-      <div className="halo flex-1 px-6 pt-16">
+    <Moldura>
+      <div className="flex-1 px-6 pt-16">
         <h1 className="font-display text-[2.75rem] italic leading-[0.95]">{titulo}</h1>
         <div className="mt-4 text-[1.0625rem] leading-snug text-muted-foreground">{children}</div>
       </div>
@@ -70,8 +70,8 @@ export function App() {
 
   if (carregando) {
     return (
-      <Moldura className="colmeia">
-        <div role="status" className="halo grid flex-1 place-items-center">
+      <Moldura>
+        <div role="status" className="grid flex-1 place-items-center">
           <span className="font-display text-[4rem] italic leading-none">Listou</span>
           <span className="sr-only">Carregando</span>
         </div>

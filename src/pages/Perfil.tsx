@@ -4,15 +4,16 @@ import { Moldura } from '@/components/layout/Moldura'
 import { NavInferior } from '@/components/layout/NavInferior'
 import { StatusConexao } from '@/components/layout/StatusConexao'
 import { Button } from '@/components/ui/button'
-import { Field } from '@/components/ui/input'
+import { Field, PasswordField } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
 import { useUsuario } from '@/hooks/sessao'
 import { usePerfil, useSalvarNome } from '@/hooks/useListas'
+import { mensagemDeAuth, SENHA_MINIMA } from '@/lib/auth'
 import { avisar } from '@/lib/avisos'
 import { supabase } from '@/lib/supabase'
 import { definirTema, useTema, type Tema } from '@/lib/tema'
 
-/** Perfil: nome que aparece para quem divide a lista, aparência e saída da conta. */
+/** Perfil: nome que aparece para quem divide a lista, senha, aparência e saída da conta. */
 export function Perfil() {
   const usuario = useUsuario()
   const { data: perfil } = usePerfil()
@@ -20,6 +21,9 @@ export function Perfil() {
   const tema = useTema()
   const [nome, setNome] = useState('')
   const [erro, setErro] = useState<string | null>(null)
+  const [senha, setSenha] = useState('')
+  const [erroSenha, setErroSenha] = useState<string | null>(null)
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
   const [saindo, setSaindo] = useState(false)
 
   // O campo começa com o nome salvo assim que ele chega do servidor.
@@ -38,6 +42,18 @@ export function Perfil() {
     })
   }
 
+  async function salvarSenha(evento: FormEvent) {
+    evento.preventDefault()
+    if (senha.length < SENHA_MINIMA) return setErroSenha(`Escolha uma senha com pelo menos ${SENHA_MINIMA} caracteres.`)
+    setErroSenha(null)
+    setSalvandoSenha(true)
+    const { error } = await supabase.auth.updateUser({ password: senha })
+    setSalvandoSenha(false)
+    if (error) return setErroSenha(mensagemDeAuth(error))
+    setSenha('')
+    avisar('Senha salva. Use-a na próxima vez que entrar.', 'sucesso')
+  }
+
   async function sair() {
     setSaindo(true)
     // "local": encerra só neste aparelho e funciona mesmo sem conexão.
@@ -49,10 +65,10 @@ export function Perfil() {
   }
 
   return (
-    <Moldura className="colmeia" rodape={<NavInferior atual="perfil" />}>
+    <Moldura rodape={<NavInferior atual="perfil" />}>
       <header className="flex shrink-0 items-start justify-between gap-4 px-5 pt-6">
         <div className="min-w-0">
-          <h1 className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em]">Perfil</h1>
+          <h1 className="text-[1.5rem] font-medium leading-tight tracking-[-0.025em]">Perfil</h1>
           <p className="mt-0.5 truncate text-[1.0625rem] text-muted-foreground">{usuario.email ?? 'Sua conta'}</p>
         </div>
         <StatusConexao className="mt-1" />
@@ -74,8 +90,25 @@ export function Perfil() {
           </Button>
         </form>
 
+        <form onSubmit={(e) => void salvarSenha(e)} className="space-y-3" noValidate>
+          {/* Campo de usuário escondido: ajuda o gerenciador de senhas a ligar a senha nova à conta certa. */}
+          <input type="email" name="email" value={usuario.email ?? ''} autoComplete="username" readOnly hidden />
+          <PasswordField
+            label="Nova senha"
+            name="nova-senha"
+            hint={`Pelo menos ${SENHA_MINIMA} caracteres. Serve para criar a primeira senha ou trocar a atual.`}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            error={erroSenha}
+            autoComplete="new-password"
+          />
+          <Button type="submit" variant="secondary" disabled={salvandoSenha || senha === ''}>
+            {salvandoSenha ? 'Salvando…' : 'Salvar senha'}
+          </Button>
+        </form>
+
         <section aria-labelledby="titulo-aparencia">
-          <h2 id="titulo-aparencia" className="mb-2 text-[1.0625rem] font-semibold">
+          <h2 id="titulo-aparencia" className="mb-2.5 text-[1.0625rem] font-medium">
             Aparência
           </h2>
           <Segmented<Tema>
@@ -91,7 +124,7 @@ export function Perfil() {
         </section>
 
         <section aria-labelledby="titulo-conta">
-          <h2 id="titulo-conta" className="mb-2 text-[1.0625rem] font-semibold">
+          <h2 id="titulo-conta" className="mb-2.5 text-[1.0625rem] font-medium">
             Conta
           </h2>
           <Button variant="secondary" disabled={saindo} onClick={() => void sair()}>

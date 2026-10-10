@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Laranja da marca. O texto é escuro: branco não passa no contraste AA.
-        default: 'bg-primary text-primary-foreground shadow-acento hover:brightness-105',
+        default: 'bg-primary text-primary-foreground hover:brightness-105',
         dark: 'bg-foreground text-background hover:bg-foreground/90',
         // Contorno claro para usar em cima da moldura preta.
         moldura: 'border border-moldura-borda text-moldura-foreground hover:bg-moldura-cartao',

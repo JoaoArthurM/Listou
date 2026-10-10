@@ -26,7 +26,7 @@ function Secao({ titulo, icone: Icone, contagem, children }: SecaoProps) {
           className="flex min-h-14 w-full items-center gap-3 rounded-cartao pl-3.5 pr-4 text-left text-verde"
         >
           <Icone aria-hidden className="size-6 shrink-0" strokeWidth={1.6} />
-          <span className="flex-1 text-[1.0625rem] font-semibold tracking-[-0.015em]">{titulo}</span>
+          <span className="flex-1 text-[1.125rem] font-medium tracking-[-0.015em]">{titulo}</span>
           <span className="dinheiro text-[0.9375rem] text-muted-foreground">{contagem}</span>
           <span className="grid size-6 place-items-center rounded-full border border-controle/70">
             <ChevronDown aria-hidden className={cn('size-3.5 transition-transform duration-300 ease-saida', !aberta && '-rotate-90')} />
