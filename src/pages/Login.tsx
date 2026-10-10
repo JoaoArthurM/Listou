@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Moldura } from '@/components/layout/Moldura'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
+import { FOTO_PADRAO } from '@/lib/fotos'
 import { supabase } from '@/lib/supabase'
 
 const ESPERA_REENVIO = 60
@@ -21,16 +22,17 @@ function traduzir(erro: { message: string; status?: number; code?: string }): st
 /** Cartão de demonstração: o que o app faz, com o exemplo de etiqueta da própria especificação. */
 function Demonstracao() {
   return (
-    <div aria-hidden className="relative mx-auto mt-9 w-[15.5rem]">
-      <span className="absolute inset-0 origin-bottom -rotate-[7deg] rounded-[1.5rem] bg-foreground/15 dark:bg-white/[0.06]" />
-      <span className="absolute inset-0 origin-bottom rotate-[5deg] rounded-[1.5rem] bg-foreground/30 dark:bg-white/10" />
-      <div className="cartao-escuro relative -rotate-[1.5deg] rounded-[1.5rem] p-4 shadow-flutuante">
+    <div aria-hidden className="relative mx-auto mt-10 w-[16.5rem]">
+      <span className="absolute inset-0 origin-bottom -rotate-[7deg] rounded-[1.5rem] bg-[#8d867c] dark:bg-[#3a3631]" />
+      <span className="absolute inset-0 origin-bottom rotate-[5deg] rounded-[1.5rem] bg-[#57514a] dark:bg-[#2b2824]" />
+      <div className="cartao-foto -rotate-[1.5deg] rounded-[1.5rem] p-4 shadow-flutuante">
+        <img src={FOTO_PADRAO} alt="" decoding="async" />
         <div className="flex gap-2 text-sm">
-          <span className="rounded-full bg-white/[0.16] px-3 py-1">Etiqueta</span>
+          <span className="rounded-full bg-white/20 px-3 py-1 backdrop-blur-sm">Etiqueta</span>
           <span className="dinheiro rounded-full bg-destaque px-3 py-1 font-medium text-destaque-foreground">6+ 4,69</span>
         </div>
-        <p className="mt-7 font-display text-[2.375rem] italic leading-none">Café 500 g</p>
-        <p className="dinheiro mt-2 text-[0.9375rem] text-white/80">6 × R$ 4,69 = R$ 28,14</p>
+        <p className="mt-14 font-display text-[2.5rem] italic leading-none">Café 500 g</p>
+        <p className="dinheiro mt-2 text-[0.9375rem] text-white/85">6 × R$ 4,69 = R$ 28,14</p>
       </div>
     </div>
   )
@@ -81,10 +83,9 @@ export function Login({ temConvite }: { temConvite: boolean }) {
 
   return (
     <Moldura
-      className="colmeia"
       rodape={<p className="py-2 text-center text-[0.9375rem] text-moldura-muted">Sem senha. O acesso chega por e-mail.</p>}
     >
-      <div className="halo flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-7 pt-12">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-7 pt-12">
         <h1 className="font-display text-[5rem] italic leading-[0.85] tracking-[-0.02em]">Listou</h1>
         <p className="mt-4 max-w-[17rem] text-[1.0625rem] leading-snug text-muted-foreground">
           A lista de compras a dois que lê a etiqueta e soma o carrinho.

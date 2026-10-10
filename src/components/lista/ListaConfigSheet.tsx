@@ -120,7 +120,7 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
     >
       <div className="space-y-7">
         <section aria-labelledby="titulo-convite">
-          <h3 id="titulo-convite" className="text-[1.0625rem] font-semibold">
+          <h3 id="titulo-convite" className="text-[1.0625rem] font-medium">
             Convidar
           </h3>
           {codigo ? (
@@ -145,7 +145,7 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
         </section>
 
         <form onSubmit={salvar} className="space-y-4" noValidate>
-          <h3 className="text-[1.0625rem] font-semibold">Dados da lista</h3>
+          <h3 className="text-[1.0625rem] font-medium">Dados da lista</h3>
           <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
           <Field label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
           <Field label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
@@ -161,7 +161,7 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
 
         {cartoes.length > 0 ? (
           <section aria-labelledby="titulo-cartoes">
-            <h3 id="titulo-cartoes" className="text-[1.0625rem] font-semibold">
+            <h3 id="titulo-cartoes" className="text-[1.0625rem] font-medium">
               Cartões da loja
             </h3>
             <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">

@@ -33,7 +33,7 @@ export default defineConfig({
       },
       workbox: {
         // App shell inteiro em cache; os dados offline ficam no cache persistido do React Query.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
       },

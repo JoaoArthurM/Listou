@@ -37,7 +37,7 @@ export function CameraButton({ aoFotografar, disabled, className }: CameraButton
         disabled={disabled}
         onClick={() => entrada.current?.click()}
         className={cn(
-          'grid size-[3.25rem] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-acento transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
+          'grid size-[3.25rem] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
           className,
         )}
       >

@@ -37,7 +37,6 @@ export default {
         verde: cor('verde'),
         sucesso: cor('sucesso'),
         destructive: { DEFAULT: cor('destructive'), foreground: cor('destructive-foreground') },
-        brilho: cor('brilho'),
       },
       fontFamily: {
         sans: ['"Inter Tight"', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -51,7 +50,6 @@ export default {
       boxShadow: {
         cartao: '0 1px 2px hsl(var(--sombra) / 0.04), 0 10px 24px -14px hsl(var(--sombra) / 0.16)',
         flutuante: '0 2px 4px hsl(var(--sombra) / 0.06), 0 18px 40px -16px hsl(var(--sombra) / 0.28)',
-        acento: '0 10px 24px -10px hsl(var(--primary) / 0.55)',
       },
       transitionTimingFunction: {
         saida: 'cubic-bezier(0.16, 1, 0.3, 1)',

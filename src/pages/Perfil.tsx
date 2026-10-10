@@ -49,10 +49,10 @@ export function Perfil() {
   }
 
   return (
-    <Moldura className="colmeia" rodape={<NavInferior atual="perfil" />}>
+    <Moldura rodape={<NavInferior atual="perfil" />}>
       <header className="flex shrink-0 items-start justify-between gap-4 px-5 pt-6">
         <div className="min-w-0">
-          <h1 className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em]">Perfil</h1>
+          <h1 className="text-[1.5rem] font-medium leading-tight tracking-[-0.025em]">Perfil</h1>
           <p className="mt-0.5 truncate text-[1.0625rem] text-muted-foreground">{usuario.email ?? 'Sua conta'}</p>
         </div>
         <StatusConexao className="mt-1" />
@@ -75,7 +75,7 @@ export function Perfil() {
         </form>
 
         <section aria-labelledby="titulo-aparencia">
-          <h2 id="titulo-aparencia" className="mb-2 text-[1.0625rem] font-semibold">
+          <h2 id="titulo-aparencia" className="mb-2.5 text-[1.0625rem] font-medium">
             Aparência
           </h2>
           <Segmented<Tema>
@@ -91,7 +91,7 @@ export function Perfil() {
         </section>
 
         <section aria-labelledby="titulo-conta">
-          <h2 id="titulo-conta" className="mb-2 text-[1.0625rem] font-semibold">
+          <h2 id="titulo-conta" className="mb-2.5 text-[1.0625rem] font-medium">
             Conta
           </h2>
           <Button variant="secondary" disabled={saindo} onClick={() => void sair()}>

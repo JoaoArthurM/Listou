@@ -11,10 +11,14 @@ type SegmentedProps<T extends string> = {
   className?: string
 }
 
-/** Escolha única entre poucas opções, com semântica de grupo de rádio. */
+/**
+ * Escolha única entre poucas opções, com semântica de grupo de rádio. Cada
+ * opção é uma pílula; a escolhida fica preenchida na cor do texto, no mesmo
+ * jogo de preto e creme da moldura.
+ */
 export function Segmented<T extends string>({ value, onChange, options, label, className }: SegmentedProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className={cn('flex gap-1 rounded-full bg-muted p-1', className)}>
+    <div role="radiogroup" aria-label={label} className={cn('flex gap-2', className)}>
       {options.map((opcao) => {
         const ativa = opcao.value === value
         return (
@@ -25,11 +29,10 @@ export function Segmented<T extends string>({ value, onChange, options, label, c
             aria-checked={ativa}
             onClick={() => onChange(opcao.value)}
             className={cn(
-              'flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-[0.9375rem] font-medium transition-[background-color,color,box-shadow] duration-200 ease-saida',
-              // No escuro, cartão e trilho têm quase o mesmo tom; o véu claro separa a opção ativa.
+              'flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border px-4 text-[1.0625rem] font-medium transition-[background-color,border-color,color] duration-200 ease-saida',
               ativa
-                ? 'bg-card text-foreground shadow-cartao dark:bg-white/[0.14]'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'border-foreground bg-foreground text-background'
+                : 'border-controle/45 bg-card text-foreground hover:border-controle',
             )}
           >
             {opcao.label}
