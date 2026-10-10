@@ -1,0 +1,14 @@
+# Configuração do Supabase CLI para o Listou.
+# Projeto hospedado: listou (sa-east-1). Para ligar o CLI a ele:
+#   npx supabase login
+#   npx supabase link --project-ref fckfyyvdviifiioebmbc
+project_id = "listou"
+
+# As duas funções são chamadas pelo app com o JWT do usuário logado, então a
+# plataforma já barra pedidos sem token antes de o código rodar. Dentro delas,
+# _shared/auth.ts valida o usuário e o RLS confere se ele é membro da lista.
+[functions.ler-etiqueta]
+verify_jwt = true
+
+[functions.chat]
+verify_jwt = true

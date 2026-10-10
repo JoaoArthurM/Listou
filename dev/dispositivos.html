@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Listou nos aparelhos-alvo</title>
+    <!--
+      Ferramenta de desenvolvimento, fora do build: mostra o app lado a lado nos
+      dois tamanhos de tela para os quais ele foi desenhado.
+
+        npm run dev  ->  http://localhost:5173/dev/dispositivos.html
+        ?rota=/historico   abre os dois na mesma rota
+        ?tema=escuro       força o tema escuro
+
+      Os iframes têm o tamanho real em pixels CSS; só a exibição é reduzida
+      para caber na janela. As áreas seguras (entalhe, barra de gestos) não
+      existem aqui: confira-as no aparelho.
+    -->
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #e9e6df;
+        font: 13px/1.3 system-ui, sans-serif;
+        color: #44403a;
+      }
+      main {
+        display: flex;
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 48px;
+      }
+      figure {
+        margin: 0;
+        transform-origin: center;
+      }
+      figcaption {
+        margin-bottom: 10px;
+        text-align: center;
+        font-size: 15px;
+      }
+      iframe {
+        display: block;
+        border: 0;
+        background: #000;
+        box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.45);
+      }
+      .iphone iframe {
+        border-radius: 47px;
+      }
+      .galaxy iframe {
+        border-radius: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <figure class="iphone">
+        <figcaption>iPhone 16 · 393 × 852</figcaption>
+        <iframe title="iPhone 16" width="393" height="852"></iframe>
+      </figure>
+      <figure class="galaxy">
+        <figcaption>Galaxy S24 Ultra · 412 × 915</figcaption>
+        <iframe title="Galaxy S24 Ultra" width="412" height="915"></iframe>
+      </figure>
+    </main>
+    <script>
+      const parametros = new URLSearchParams(location.search)
+      const tema = parametros.get('tema')
+      if (tema === 'claro' || tema === 'escuro') localStorage.setItem('listou:tema', tema)
+      else if (tema === 'sistema') localStorage.removeItem('listou:tema')
+
+      for (const quadro of document.querySelectorAll('iframe')) quadro.src = parametros.get('rota') || '/'
+
+      function ajustar() {
+        const escala = Math.min(1, (innerHeight - 24) / (915 + 32), (innerWidth - 48) / (393 + 412 + 48))
+        for (const figura of document.querySelectorAll('figure')) figura.style.zoom = escala
+      }
+      addEventListener('resize', ajustar)
+      ajustar()
+    </script>
+  </body>
+</html>

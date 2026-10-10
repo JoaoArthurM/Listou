@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Identidade visual do Listou. Tudo que é cor, raio e fonte mora neste arquivo;
+ * os componentes só referenciam os tokens (via tailwind.config.ts). Trocar o
+ * design é trocar os valores daqui, sem reescrever componente.
+ *
+ * Referência: "Savor" (Odama). Creme quente, laranja vivo, moldura preta com a
+ * folha de conteúdo de cantos arredondados por cima.
+ *
+ * Contraste (WCAG AA) já conferido para os pares usados:
+ *   foreground / background ........ 17,6:1      muted-foreground / background .. 5,3:1
+ *   primary-foreground / primary ... 6,8:1       primary-texto / background ..... 5,1:1
+ *   moldura-muted / moldura ........ 7,4:1       controle / background (borda) .. 3,3:1
+ * O texto sobre o laranja é escuro de propósito: branco daria 3,06:1.
+ */
+
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./assets/fonts/inter-tight-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/instrument-serif-latin-400-italic.woff2') format('woff2');
+}
+
+@layer base {
+  :root {
+    /* Moldura: a faixa preta atrás da folha (navegação e total do carrinho). */
+    --moldura: 0 0% 0%;
+    --moldura-foreground: 0 0% 100%;
+    --moldura-muted: 0 0% 60%;
+    --moldura-borda: 0 0% 23%;
+    --moldura-cartao: 0 0% 7%;
+
+    /* Folha: a área de conteúdo. */
+    --background: 46 68% 96%; /* #FCF9EF */
+    --foreground: 30 10% 8%;
+    --card: 24 100% 99%; /* #FFFCFA */
+    --muted: 42 34% 92%;
+    --muted-foreground: 40 4% 40%;
+    --border: 36 22% 90%; /* divisores decorativos */
+    --controle: 36 4% 54%; /* borda de campo e de check: 3:1 */
+
+    /* Acento. */
+    --primary: 14 96% 59%; /* #FB6133 */
+    --primary-foreground: 18 77% 7%;
+    --primary-texto: 17 88% 38%; /* laranja para texto sobre a folha */
+    --ring: 14 96% 59%;
+
+    /* Faixa de dica (lâmpada), chip amarelo, verdes do checklist. */
+    --dica: 39 81% 92%;
+    --dica-borda: 37 70% 82%;
+    --dica-foreground: 30 15% 28%;
+    --destaque: 43 88% 63%; /* #F4C54F */
+    --destaque-foreground: 30 60% 10%;
+    --verde: 149 49% 10%; /* #0D2619 */
+    --sucesso: 140 60% 27%;
+
+    --destructive: 4 74% 44%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Cartão de destaque: escuro nos dois temas, como o cartão de receita da referência. */
+    --cartao-escuro: 24 16% 8%;
+    --cartao-escuro-luz: 26 34% 24%;
+
+    --brilho: 22 68% 88%; /* halo pêssego */
+    --sombra: 28 40% 18%;
+    --colmeia-opacidade: 0.7;
+
+    --raio-folha: 1.75rem;
+    --raio-cartao: 1.375rem;
+    --raio-campo: 1rem;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 40 7% 8%; /* #161513 */
+    --foreground: 42 40% 93%;
+    --card: 36 7% 12%;
+    --muted: 36 6% 15%;
+    --muted-foreground: 40 8% 66%;
+    --border: 36 6% 18%;
+    --controle: 38 5% 46%;
+
+    --primary-texto: 17 100% 68%;
+
+    --dica: 31 35% 12%;
+    --dica-borda: 31 40% 22%;
+    --dica-foreground: 36 50% 85%;
+    --verde: 140 35% 80%;
+    --sucesso: 140 50% 62%;
+
+    --destructive: 4 80% 64%;
+    --destructive-foreground: 0 0% 7%;
+
+    --cartao-escuro: 30 10% 13%;
+    --cartao-escuro-luz: 26 38% 30%;
+
+    --brilho: 18 70% 22%;
+    --sombra: 0 0% 0%;
+    --colmeia-opacidade: 0.05;
+
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    height: 100%;
+    /* O texto da interface não muda de tamanho ao girar o aparelho. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* A página em si não rola: quem rola são as áreas dentro da folha, como num app. */
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-moldura font-sans text-foreground antialiased;
+    height: 100%;
+    margin: 0;
+    letter-spacing: -0.011em;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
+  }
+
+  input,
+  textarea {
+    caret-color: hsl(var(--primary));
+  }
+
+  /* Campos em 16px: abaixo disso o Safari do iPhone dá zoom ao focar. */
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Rolagem discreta dentro da folha. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--controle) / 0.45) transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /*
+   * Moldura do app: ocupa exatamente a área visível. As variáveis vêm de
+   * src/lib/teclado.ts e fazem a tela encolher junto com o teclado, para o
+   * campo do chat nunca ficar escondido atrás dele.
+   */
+  .moldura-app {
+    position: fixed;
+    top: 0;
+    left: env(safe-area-inset-left);
+    right: env(safe-area-inset-right);
+    height: var(--altura-visivel, 100dvh);
+    transform: translateY(var(--vv-topo, 0px));
+  }
+
+  /* Com o teclado aberto, cada pixel conta: o rodapé preto sai de cena. */
+  .teclado-aberto .moldura-rodape {
+    display: none;
+  }
+
+  .teclado-aberto .moldura-folha {
+    border-radius: 0;
+  }
+
+  /* Cartão de destaque escuro, com o brilho quente no canto como numa foto. */
+  .cartao-escuro {
+    color: #fff;
+    background-color: hsl(var(--cartao-escuro));
+    background-image: radial-gradient(
+      120% 85% at 85% 0%,
+      hsl(var(--cartao-escuro-luz)) 0%,
+      hsl(var(--cartao-escuro) / 0) 62%
+    );
+  }
+
+  /* Valor em reais ou quantidade: algarismos de largura fixa, sem quebrar no meio. */
+  .dinheiro {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Colmeia de fundo da referência, bem sutil, concentrada no topo da folha. */
+  .colmeia {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .colmeia::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='97' height='168' viewBox='0 0 97 168'%3E%3Cpath d='M48.5 0 97 28v56L48.5 112 0 84V28ZM48.5 112v56' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-size: 97px 168px;
+    background-position: 50% -28px;
+    opacity: var(--colmeia-opacidade);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 62%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 62%);
+  }
+
+  /* Halo pêssego atrás do conteúdo principal (cartão de destaque, login). */
+  .halo {
+    background-image: radial-gradient(
+      70% 46% at 50% 34%,
+      hsl(var(--brilho) / 0.9) 0%,
+      hsl(var(--brilho) / 0) 100%
+    );
+  }
+}
+
+@layer utilities {
+  .pt-seguro {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-seguro {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .sem-barra::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sem-barra {
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

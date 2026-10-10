@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Listou</title>
+    <meta
+      name="description"
+      content="Lista de compras compartilhada que lê a etiqueta de preço e soma o carrinho."
+    />
+    <meta name="theme-color" id="meta-tema" content="#FCF9EF" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Listou" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+      // Aplica o tema antes da primeira pintura para não piscar claro/escuro.
+      (function () {
+        try {
+          var escolha = localStorage.getItem('listou:tema') || 'sistema'
+          var escuro =
+            escolha === 'escuro' ||
+            (escolha === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', escuro)
+          document.getElementById('meta-tema').content = escuro ? '#161513' : '#FCF9EF'
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

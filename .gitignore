@@ -1,0 +1,20 @@
+node_modules
+dist
+dev-dist
+*.local
+*.tsbuildinfo
+
+# segredos e configuração local
+.env
+.env.*
+!.env.example
+
+.vercel
+supabase/.temp
+supabase/.branches
+
+.DS_Store
+Thumbs.db
+
+# o Deno gera ao rodar "deno check"; o deploy do Supabase resolve as versões pelo deno.json
+supabase/functions/**/deno.lock
