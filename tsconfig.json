@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "useDefineForClassFields": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"]
+  },
+  "include": [
+    "src",
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "supabase/functions/_shared/schemas.ts",
+    "supabase/functions/_shared/schemas.test.ts",
+    "supabase/functions/_shared/precos.ts",
+    "supabase/functions/_shared/dinheiro.ts"
+  ]
+}

@@ -1,0 +1,82 @@
+import { Button } from '@/components/ui/button'
+import { useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
+import { useAtualizarCard } from '@/hooks/useMensagens'
+import { linhaCalculo } from '@/lib/precos'
+import type { AcaoProposta, DadosProposta, Item } from '@/types/app'
+
+type PropostaCardProps = {
+  mensagemId: string
+  dados: DadosProposta
+  listaId: string
+  itens: Item[]
+  somenteLeitura: boolean
+}
+
+function descrever(acao: AcaoProposta): string {
+  if (acao.tipo === 'remover_item') return `Remover “${acao.nome}” da lista`
+  if (acao.tipo === 'desmarcar_comprado') return `Tirar “${acao.nome}” do carrinho`
+  return `Marcar “${acao.nome}”: ${linhaCalculo(acao.qtd, acao.unidade, acao.preco_centavos, 'manual')}`
+}
+
+/**
+ * Ações pedidas por texto que mexem em dados já existentes (remover,
+ * desmarcar, marcar com preço) chegam como proposta: só rodam depois que
+ * alguém confirma aqui (CLAUDE.md, seção 6.2).
+ */
+export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura }: PropostaCardProps) {
+  const atualizar = useAtualizarItem()
+  const remover = useRemoverItem()
+  const atualizarCard = useAtualizarCard(listaId)
+  const pendente = dados.estado === 'pendente' && !somenteLeitura
+
+  function confirmar() {
+    for (const acao of dados.acoes) {
+      // O item pode ter sido removido pelo outro aparelho enquanto a proposta esperava.
+      if (!itens.some((i) => i.id === acao.item_id)) continue
+      if (acao.tipo === 'remover_item') {
+        remover.mutate({ id: acao.item_id, lista_id: listaId })
+      } else if (acao.tipo === 'desmarcar_comprado') {
+        atualizar.mutate({ id: acao.item_id, lista_id: listaId, patch: { comprado: false } })
+      } else {
+        atualizar.mutate({
+          id: acao.item_id,
+          lista_id: listaId,
+          patch: {
+            comprado: true,
+            qtd_comprada: acao.qtd,
+            preco_unit_centavos: acao.preco_centavos,
+            faixa_aplicada: 'manual',
+            origem_preco: 'manual',
+          },
+        })
+      }
+    }
+    atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'confirmada' } })
+  }
+
+  return (
+    <div className="rounded-cartao bg-card p-4 shadow-cartao">
+      <ul className="space-y-1.5">
+        {dados.acoes.map((acao, i) => (
+          <li key={i} className="dinheiro whitespace-normal text-[1.0625rem] leading-snug">
+            {descrever(acao)}
+          </li>
+        ))}
+      </ul>
+      {pendente ? (
+        <div className="mt-3.5 flex gap-2">
+          <Button variant="secondary" size="sm" className="flex-1" onClick={() => atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'cancelada' } })}>
+            Cancelar
+          </Button>
+          <Button size="sm" className="flex-1" onClick={confirmar}>
+            Confirmar
+          </Button>
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {dados.estado === 'confirmada' ? 'Confirmado.' : dados.estado === 'cancelada' ? 'Cancelado.' : 'Não confirmado.'}
+        </p>
+      )}
+    </div>
+  )
+}
