@@ -287,6 +287,7 @@ type Acao =
 ### 7.1 Telas
 
 1. **Login** (magic link por e-mail via Supabase Auth).
+   **Decisão (out/2026):** o login principal passou a ser **e-mail e senha**, com criação de conta na mesma tela. O magic link ficou como alternativa (e como "esqueci a senha": entra pelo link e define outra senha no Perfil). Não há código de 6 dígitos por e-mail.
 2. **Minhas listas**: listas ativas, botão "nova lista", entrar por código de convite.
 3. **Lista** (tela principal), com duas abas:
    - **Chat**: conversa com o assistente, botão de câmera, campo de texto.

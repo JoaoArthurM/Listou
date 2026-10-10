@@ -50,9 +50,13 @@ A chave do Gemini nunca entra no frontend nem no repositório.
 
 **Auth** (painel > Authentication):
 
-1. **URL Configuration:** em *Site URL*, a URL de produção; em *Redirect URLs*, a de produção e `http://localhost:5173`.
-2. **Email Templates:** em *Magic Link* e *Confirm signup*, inclua o código junto do link, por exemplo `Seu código: {{ .Token }}`. No app instalado no iPhone o link do e-mail abre no Safari, que não divide o login com o app; ali a pessoa entra digitando o código.
-3. **SMTP:** o envio embutido do Supabase só entrega para e-mails da equipe do projeto e limita a 2 mensagens por hora (a documentação diz que ele não é para produção). Para a segunda pessoa conseguir entrar, configure um SMTP próprio (Resend, por exemplo) ou adicione o e-mail dela à equipe do projeto.
+O login é por **e-mail e senha** (entrar e criar conta na mesma tela). O link de acesso por e-mail continua como alternativa e serve de "esqueci a senha": a pessoa entra pelo link e define outra senha no Perfil.
+
+1. **Confirm email** (em *Sign In / Providers > Email*): hoje está **ligado**, então quem cria conta recebe um e-mail e só entra depois de abrir o link. Para a pessoa entrar só com e-mail e senha, sem depender de e-mail nenhum, desligue essa opção. O custo é que o endereço deixa de ser verificado.
+2. **URL Configuration:** em *Site URL*, a URL de produção; em *Redirect URLs*, a de produção e `http://localhost:5173`. Vale para o link de acesso e para o e-mail de confirmação.
+3. **SMTP:** o envio embutido do Supabase só entrega para e-mails da equipe do projeto e limita a 2 mensagens por hora (a documentação diz que ele não é para produção). Isso afeta o link de acesso e a confirmação de conta. Com *Confirm email* desligado e login por senha, dá para usar sem SMTP próprio; para o link funcionar com qualquer endereço, configure um (Resend, por exemplo).
+
+No app instalado no iPhone, o link do e-mail abre no Safari, que não divide o login com o app. Ali o caminho é a senha.
 
 ## Publicar o frontend (Vercel)
 
@@ -75,5 +79,5 @@ Bucket privado `etiquetas`, caminho `{lista_id}/{uuid}.jpg`, comprimidas no celu
 ## Pendências conhecidas
 
 - **Teste com 20 fotos reais de etiqueta** (seção 11 da spec), com taxa de acerto por faixa. Só etiquetas sintéticas foram testadas.
-- **Deploy na Vercel** e os três ajustes de Auth acima.
+- **Deploy na Vercel** e os ajustes de Auth acima (principalmente desligar *Confirm email*).
 - **Áreas seguras** (entalhe, barra de gestos) só foram conferidas por emulação, não em aparelho físico.

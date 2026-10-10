@@ -4,15 +4,16 @@ import { Moldura } from '@/components/layout/Moldura'
 import { NavInferior } from '@/components/layout/NavInferior'
 import { StatusConexao } from '@/components/layout/StatusConexao'
 import { Button } from '@/components/ui/button'
-import { Field } from '@/components/ui/input'
+import { Field, PasswordField } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
 import { useUsuario } from '@/hooks/sessao'
 import { usePerfil, useSalvarNome } from '@/hooks/useListas'
+import { mensagemDeAuth, SENHA_MINIMA } from '@/lib/auth'
 import { avisar } from '@/lib/avisos'
 import { supabase } from '@/lib/supabase'
 import { definirTema, useTema, type Tema } from '@/lib/tema'
 
-/** Perfil: nome que aparece para quem divide a lista, aparência e saída da conta. */
+/** Perfil: nome que aparece para quem divide a lista, senha, aparência e saída da conta. */
 export function Perfil() {
   const usuario = useUsuario()
   const { data: perfil } = usePerfil()
@@ -20,6 +21,9 @@ export function Perfil() {
   const tema = useTema()
   const [nome, setNome] = useState('')
   const [erro, setErro] = useState<string | null>(null)
+  const [senha, setSenha] = useState('')
+  const [erroSenha, setErroSenha] = useState<string | null>(null)
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
   const [saindo, setSaindo] = useState(false)
 
   // O campo começa com o nome salvo assim que ele chega do servidor.
@@ -36,6 +40,18 @@ export function Perfil() {
       onSuccess: () => avisar('Nome atualizado.', 'sucesso'),
       onError: (e) => setErro(e.message),
     })
+  }
+
+  async function salvarSenha(evento: FormEvent) {
+    evento.preventDefault()
+    if (senha.length < SENHA_MINIMA) return setErroSenha(`Escolha uma senha com pelo menos ${SENHA_MINIMA} caracteres.`)
+    setErroSenha(null)
+    setSalvandoSenha(true)
+    const { error } = await supabase.auth.updateUser({ password: senha })
+    setSalvandoSenha(false)
+    if (error) return setErroSenha(mensagemDeAuth(error))
+    setSenha('')
+    avisar('Senha salva. Use-a na próxima vez que entrar.', 'sucesso')
   }
 
   async function sair() {
@@ -71,6 +87,23 @@ export function Perfil() {
           />
           <Button type="submit" variant="secondary" disabled={salvarNome.isPending || nome.trim() === (perfil?.nome ?? '')}>
             Salvar nome
+          </Button>
+        </form>
+
+        <form onSubmit={(e) => void salvarSenha(e)} className="space-y-3" noValidate>
+          {/* Campo de usuário escondido: ajuda o gerenciador de senhas a ligar a senha nova à conta certa. */}
+          <input type="email" name="email" value={usuario.email ?? ''} autoComplete="username" readOnly hidden />
+          <PasswordField
+            label="Nova senha"
+            name="nova-senha"
+            hint={`Pelo menos ${SENHA_MINIMA} caracteres. Serve para criar a primeira senha ou trocar a atual.`}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            error={erroSenha}
+            autoComplete="new-password"
+          />
+          <Button type="submit" variant="secondary" disabled={salvandoSenha || senha === ''}>
+            {salvandoSenha ? 'Salvando…' : 'Salvar senha'}
           </Button>
         </form>
 
