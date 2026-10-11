@@ -15,6 +15,7 @@ import { gerarJson, registrarUso, type ParteDeEntrada, type RespostaGemini } fro
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
 import { problemasDaLeitura, textoDoProblema, travaPreco } from '../_shared/leitura.ts'
 import { calcularCompra, cartoesDesconhecidos, linhaCalculo, nomeCartao, normalizarCartao } from '../_shared/precos.ts'
+import { lerPedidoCurto } from '../_shared/pedidoCurto.ts'
 import { INSTRUCAO_CHAT, SCHEMA_CHAT } from '../_shared/prompts.ts'
 import {
   chatEntradaSchema,
@@ -33,7 +34,14 @@ type Lista = {
   cartoes: string[]
   cartoes_recusados: string[]
 }
-type ItemDaLista = { id: string; nome: string; unidade: Unidade; comprado: boolean; qtd_planejada: number | null }
+type ItemDaLista = {
+  id: string
+  nome: string
+  unidade: Unidade
+  comprado: boolean
+  qtd_planejada: number | null
+  qtd_comprada: number | null
+}
 
 const MENSAGENS_DE_CONTEXTO = 10
 const IA_FORA = 'Não consegui falar com a IA agora. Tente de novo em instantes.'
@@ -193,7 +201,11 @@ Deno.serve(async (req) => {
 
     // Contexto mínimo para o modelo: itens, as últimas mensagens e o card aberto.
     const [consultaItens, consultaHistorico, consultaCard] = await Promise.all([
-      ctx.doUsuario.from('itens').select('id, nome, unidade, comprado, qtd_planejada').eq('lista_id', lista_id).order('criado_em'),
+      ctx.doUsuario
+        .from('itens')
+        .select('id, nome, unidade, comprado, qtd_planejada, qtd_comprada')
+        .eq('lista_id', lista_id)
+        .order('criado_em'),
       ctx.doUsuario
         .from('mensagens')
         .select('papel, conteudo')
@@ -230,6 +242,9 @@ Deno.serve(async (req) => {
     // texto depois que a IA devolve a transcrição.
     if (mensagem !== undefined) await gravarFala(mensagem)
 
+    // Formato curto ("ovo 12,30 1 caixa") é lido por código: imediato e sem depender da IA.
+    const curto = mensagem !== undefined ? lerPedidoCurto(mensagem) : null
+
     const partes: ParteDeEntrada[] = [
       {
         type: 'text',
@@ -243,37 +258,42 @@ Deno.serve(async (req) => {
     ]
     if (audio) partes.push({ type: 'audio', data: audio.data, mime_type: audio.mime_type })
 
-    let resposta: RespostaGemini
-    try {
-      resposta = await gerarJson({
-        instrucao: INSTRUCAO_CHAT,
-        entrada: partes,
-        schema: SCHEMA_CHAT,
-      })
-    } catch (e) {
-      console.error('chat: gemini falhou', e)
-      await responder(ctx, lista_id, IA_FORA, 'sistema')
-      return json({ ok: false })
-    }
-    emSegundoPlano(registrarUso(ctx.admin, lista_id, 'chat', resposta))
-
     let acoes: Acao[]
     let naoEntendidas: number
-    try {
-      const lidas = interpretarAcoes(resposta.json)
-      acoes = lidas.acoes
-      naoEntendidas = lidas.descartadas
-      if (audio) {
-        if (!lidas.transcricao) {
-          await responder(ctx, lista_id, 'Não consegui entender o áudio. Tente de novo, mais perto do microfone.')
-          return json({ ok: false })
-        }
-        await gravarFala(lidas.transcricao)
+    if (curto) {
+      acoes = [curto]
+      naoEntendidas = 0
+    } else {
+      let resposta: RespostaGemini
+      try {
+        resposta = await gerarJson({
+          instrucao: INSTRUCAO_CHAT,
+          entrada: partes,
+          schema: SCHEMA_CHAT,
+        })
+      } catch (e) {
+        console.error('chat: gemini falhou', e)
+        await responder(ctx, lista_id, IA_FORA, 'sistema')
+        return json({ ok: false })
       }
-    } catch (e) {
-      console.error('chat: resposta fora do schema', e)
-      await responder(ctx, lista_id, 'Não entendi o pedido. Pode dizer de outro jeito?')
-      return json({ ok: false })
+      emSegundoPlano(registrarUso(ctx.admin, lista_id, 'chat', resposta))
+
+      try {
+        const lidas = interpretarAcoes(resposta.json)
+        acoes = lidas.acoes
+        naoEntendidas = lidas.descartadas
+        if (audio) {
+          if (!lidas.transcricao) {
+            await responder(ctx, lista_id, 'Não consegui entender o áudio. Tente de novo, mais perto do microfone.')
+            return json({ ok: false })
+          }
+          await gravarFala(lidas.transcricao)
+        }
+      } catch (e) {
+        console.error('chat: resposta fora do schema', e)
+        await responder(ctx, lista_id, 'Não entendi o pedido. Pode dizer de outro jeito?')
+        return json({ ok: false })
+      }
     }
 
     const porId = new Map(itens.map((i) => [i.id, i]))
@@ -298,6 +318,25 @@ Deno.serve(async (req) => {
           const repetido =
             itens.find((i) => !i.comprado && normalizarCartao(i.nome) === chave)?.nome ??
             novos.find((n) => normalizarCartao(n.nome) === chave)?.nome
+          const naLista = itens.find((i) => !i.comprado && normalizarCartao(i.nome) === chave)
+          // "leite 5,00 2" com "Leite" já esperando na lista: é a compra desse item, não um item novo.
+          if (naLista && acao.preco_centavos !== undefined) {
+            const qtdDita = acao.qtd ?? naLista.qtd_planejada
+            if (qtdDita === null) avisos.push(`Quantos “${naLista.nome}” você levou? Diga a quantidade junto com o preço.`)
+            else if (naLista.unidade === 'un' && !Number.isInteger(qtdDita)) {
+              avisos.push(`“${naLista.nome}” é vendido por unidade: diga um número inteiro.`)
+            } else {
+              propostas.push({
+                tipo: 'marcar_comprado',
+                item_id: naLista.id,
+                nome: naLista.nome,
+                unidade: naLista.unidade,
+                qtd: qtdDita,
+                preco_centavos: acao.preco_centavos,
+              })
+            }
+            break
+          }
           if (repetido) {
             repetidos.push(repetido)
             break
@@ -326,8 +365,12 @@ Deno.serve(async (req) => {
         case 'marcar_comprado': {
           const item = porId.get(acao.item_id)
           if (!item) naoEntendidas += 1
-          else if (item.comprado) avisos.push(`“${item.nome}” já está no carrinho.`)
-          else if (item.unidade === 'un' && acao.qtd !== undefined && !Number.isInteger(acao.qtd)) {
+          else if (item.comprado && acao.preco_centavos === undefined && acao.qtd === undefined) {
+            avisos.push(`“${item.nome}” já está no carrinho.`)
+          } else if (item.comprado && acao.preco_centavos === undefined) {
+            // Corrigir só a quantidade exige preço: a conta é do app, e o preço dele já está no item.
+            avisos.push(`Para corrigir a quantidade de “${item.nome}”, diga também o preço.`)
+          } else if (item.unidade === 'un' && acao.qtd !== undefined && !Number.isInteger(acao.qtd)) {
             avisos.push(`“${item.nome}” é vendido por unidade: diga um número inteiro.`)
           } else if (acao.preco_centavos === undefined) {
             // Sem preço não mexe no total: é o mesmo que tocar no círculo do item.
@@ -335,7 +378,8 @@ Deno.serve(async (req) => {
             paraOCarrinho.push({ item, qtd: acao.qtd ?? null })
           } else {
             // Com preço, a conta precisa de uma quantidade dita ou planejada; não se presume "1".
-            const qtd = acao.qtd ?? item.qtd_planejada
+            // Correção de item já comprado mantém a quantidade que ele tinha.
+            const qtd = acao.qtd ?? (item.comprado ? item.qtd_comprada : null) ?? item.qtd_planejada
             if (qtd === null) avisos.push(`Quantos “${item.nome}” você levou? Diga a quantidade junto com o preço.`)
             else {
               propostas.push({
