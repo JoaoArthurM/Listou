@@ -20,7 +20,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
-import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
+import { useAdicionarItem, useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
+import { avisar } from '@/lib/avisos'
 import { useMembros } from '@/hooks/useListas'
 import { formatarReais } from '@/lib/dinheiro'
 import { precoAnteriorDe, preverFaltantes, type PrecoAnterior } from '@/lib/previsao'
@@ -92,6 +93,7 @@ function Grupo({ titulo, icone: Icone, contagem, children }: GrupoProps) {
 export function ItensView({ lista, itens, resumo, precos, carregando, somenteLeitura }: ItensViewProps) {
   const adicionar = useAdicionarItem()
   const atualizar = useAtualizarItem()
+  const remover = useRemoverItem()
   const usuario = useUsuario()
   const { data: membros = [] } = useMembros(lista.id)
   const [novo, setNovo] = useState('')
@@ -151,6 +153,10 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
       ultimoPreco={ultimoPreco(item)}
       aoAlternar={alternar}
       aoAbrir={(i) => setEditando(i.id)}
+      aoExcluir={(i) => {
+        remover.mutate({ id: i.id, lista_id: i.lista_id })
+        avisar(`“${i.nome}” removido.`)
+      }}
     />
   )
 

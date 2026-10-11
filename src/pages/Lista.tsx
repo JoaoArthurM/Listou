@@ -24,7 +24,7 @@ type ListaPaginaProps = { id: string; aba: 'chat' | 'itens' }
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' })
 
-/** Tela principal: a lista com as abas Chat e Itens e o total do carrinho no rodapé (seção 7.1). */
+/** Tela principal: a lista com as abas Chat e Lista e o total do carrinho no rodapé (seção 7.1). */
 export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const { data: lista, isPending } = useLista(id)
   const { data: itens = [], isPending: carregandoItens } = useItens(id)
@@ -113,7 +113,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
                 value: 'itens',
                 label: (
                   <>
-                    Itens
+                    Lista
                     {faltando > 0 ? (
                       <span className="dinheiro grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
                         <span className="sr-only">, faltam </span>
