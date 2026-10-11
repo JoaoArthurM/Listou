@@ -1,0 +1,22 @@
+# O plano gratuito do Supabase pausa o projeto após 7 dias sem atividade.
+# Este agendador chama public.batimento() a cada 3 dias (e pode ser rodado à
+# mão em Actions > Run workflow). A chave publishable é pública: já vai no
+# bundle do app.
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: '17 9 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  batimento:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar batimento()
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            --request POST 'https://fckfyyvdviifiioebmbc.supabase.co/rest/v1/rpc/batimento' \
+            --header 'apikey: sb_publishable_vSLqwdF0O-LkTLzpJ6bQUw_1nExFH3v' \
+            --header 'Content-Type: application/json' \
+            --data '{}'
