@@ -9,6 +9,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Item, ItemPatch } from '@/types/app'
 import { aplicarPatch, atualizarItem, chaves, ErroDoApp, inserirItem, inserirItens, removerItem, type NovoItem } from './api'
 import { avisar } from './avisos'
+import { registrarFalha } from './falhas'
 
 export const MUTACAO_ITENS = ['itens'] as const
 export const MUTACAO = {
@@ -54,6 +55,16 @@ function itemOtimista(novo: NovoItem): Item {
 }
 
 export function registrarMutacoes(queryClient: QueryClient) {
+  const nomeNoCache = (listaId: string, itemId: string) =>
+    queryClient.getQueryData<Item[]>(chaves.itens(listaId))?.find((i) => i.id === itemId)?.nome ?? null
+
+  // Toast some em segundos; a falha fica no badge até a pessoa ler.
+  const falhou = (o_que: string, erro: Error) => {
+    avisar(erro.message, 'erro')
+    registrarFalha(o_que, erro.message)
+  }
+  const entre = (nome: string | null) => (nome ? `“${nome}”` : 'um item')
+
   const editarCache = async (listaId: string, editar: (itens: Item[]) => Item[]) => {
     // Uma busca em andamento sobrescreveria a alteração otimista ao terminar.
     await queryClient.cancelQueries({ queryKey: chaves.itens(listaId) })
@@ -82,7 +93,7 @@ export function registrarMutacoes(queryClient: QueryClient) {
       editarCache(novo.lista_id, (itens) =>
         itens.some((i) => i.id === novo.id) ? itens : [...itens, itemOtimista(novo)],
       ),
-    onError: (erro: Error) => avisar(erro.message, 'erro'),
+    onError: (erro: Error, novo: NovoItem) => falhou(`Adicionar ${entre(novo.nome)}`, erro),
     onSettled: (_dados: unknown, _erro: unknown, novo: NovoItem) => reconciliar(novo.lista_id),
   })
 
@@ -94,7 +105,8 @@ export function registrarMutacoes(queryClient: QueryClient) {
         const presentes = new Set(itens.map((i) => i.id))
         return [...itens, ...novos.filter((n) => !presentes.has(n.id)).map(itemOtimista)]
       }),
-    onError: (erro: Error) => avisar(erro.message, 'erro'),
+    onError: (erro: Error, vars: AdicionarItensVars) =>
+      falhou(`Adicionar ${vars.itens.length === 1 ? entre(vars.itens[0]?.nome ?? null) : `${vars.itens.length} itens`}`, erro),
     onSettled: (_dados: unknown, _erro: unknown, vars: AdicionarItensVars) => reconciliar(vars.lista_id),
   })
 
@@ -103,16 +115,22 @@ export function registrarMutacoes(queryClient: QueryClient) {
     mutationFn: ({ id, patch }: AtualizarItemVars) => atualizarItem(id, patch),
     onMutate: ({ id, lista_id, patch }: AtualizarItemVars) =>
       editarCache(lista_id, (itens) => itens.map((i) => (i.id === id ? aplicarPatch(i, patch) : i))),
-    onError: (erro: Error) => avisar(erro.message, 'erro'),
+    onError: (erro: Error, vars: AtualizarItemVars) =>
+      falhou(`Alterar ${entre(nomeNoCache(vars.lista_id, vars.id))}`, erro),
     onSettled: (_dados: unknown, _erro: unknown, vars: AtualizarItemVars) => reconciliar(vars.lista_id),
   })
 
-  queryClient.setMutationDefaults<void, Error, RemoverItemVars, void>(MUTACAO.remover, {
+  // O contexto guarda o nome: na hora do erro o item já saiu do cache.
+  queryClient.setMutationDefaults<void, Error, RemoverItemVars, string | null>(MUTACAO.remover, {
     ...comuns,
     mutationFn: ({ id }: RemoverItemVars) => removerItem(id),
-    onMutate: ({ id, lista_id }: RemoverItemVars) =>
-      editarCache(lista_id, (itens) => itens.filter((i) => i.id !== id)),
-    onError: (erro: Error) => avisar(erro.message, 'erro'),
+    onMutate: async ({ id, lista_id }: RemoverItemVars) => {
+      const nome = nomeNoCache(lista_id, id)
+      await editarCache(lista_id, (itens) => itens.filter((i) => i.id !== id))
+      return nome
+    },
+    onError: (erro: Error, _vars: RemoverItemVars, nome: string | null | undefined) =>
+      falhou(`Remover ${entre(nome ?? null)}`, erro),
     onSettled: (_dados: unknown, _erro: unknown, vars: RemoverItemVars) => reconciliar(vars.lista_id),
   })
 }

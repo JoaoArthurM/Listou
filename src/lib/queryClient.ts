@@ -1,6 +1,7 @@
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { QueryClient } from '@tanstack/react-query'
 import type { PersistQueryClientOptions } from '@tanstack/react-query-persist-client'
+import { limparFalhas } from './falhas'
 import { registrarMutacoes } from './mutacoes'
 
 const SEMANA = 1000 * 60 * 60 * 24 * 7
@@ -41,5 +42,6 @@ export const persistencia: Omit<PersistQueryClientOptions, 'queryClient'> = {
 /** Ao sair da conta, nada do usuário anterior fica no aparelho. */
 export function limparCacheLocal() {
   queryClient.clear()
+  limparFalhas()
   void persister.removeClient()
 }

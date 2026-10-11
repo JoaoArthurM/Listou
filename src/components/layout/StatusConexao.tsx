@@ -1,6 +1,11 @@
-import { CloudOff, RefreshCw } from 'lucide-react'
+import { AlertTriangle, CloudOff, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Sheet } from '@/components/ui/sheet'
 import { useConexao } from '@/hooks/useConexao'
-import { cn } from '@/lib/utils'
+import { limparFalhas, useFalhas } from '@/lib/falhas'
+import { useFilaDeFotos } from '@/lib/filaDeFotos'
+import { cn, plural } from '@/lib/utils'
 
 type StatusConexaoProps = {
   /** Estado do canal em tempo real da lista aberta, quando há um. */
@@ -35,9 +40,65 @@ function Barras({ cheias, batidas, buscando }: { cheias: number; batidas: number
 /** Indicador de conexão: mostra o que a sonda mediu, não o que o navegador supõe. */
 export function StatusConexao({ canal, className }: StatusConexaoProps) {
   const { estado, pendentes, fotosNaFila, latenciaMs, batidas } = useConexao()
+  const falhas = useFalhas()
+  const fotosComErro = useFilaDeFotos().filter((f) => f.estado === 'erro').length
+  const [detalhes, setDetalhes] = useState(false)
   // Alterações de itens e fotos de etiqueta que esperam o sinal voltar.
   const naFila = pendentes + fotosNaFila
+  const naoSalvos = falhas.length + fotosComErro
   const base = 'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[0.8125rem] font-medium'
+
+  // O que não foi salvo tem prioridade sobre qualquer outro estado: fica até a pessoa ler.
+  if (naoSalvos > 0) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setDetalhes(true)}
+          aria-label={`${plural(naoSalvos, 'alteração não salva', 'alterações não salvas')}. Toque para ver.`}
+          className={cn(base, 'bg-destructive text-destructive-foreground', className)}
+        >
+          <AlertTriangle aria-hidden className="size-3.5" />
+          {naoSalvos === 1 ? '1 não salvo' : `${naoSalvos} não salvos`}
+          {estado === 'offline' ? ' · offline' : naFila > 0 ? ` · ${naFila} na fila` : ''}
+        </button>
+        <Sheet
+          open={detalhes}
+          onOpenChange={setDetalhes}
+          title="Não foi salvo"
+          description="O servidor não recebeu estas alterações. A lista voltou ao que está salvo: confira e refaça o que precisar."
+        >
+          <div className="space-y-5 pb-1">
+            <ul className="rounded-cartao bg-card shadow-cartao">
+              {falhas.map((falha) => (
+                <li key={falha.id} className="border-b border-border px-4 py-3 last:border-b-0">
+                  <p className="text-[1.0625rem] font-medium">{falha.o_que}</p>
+                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-muted-foreground">{falha.motivo}</p>
+                </li>
+              ))}
+              {fotosComErro > 0 ? (
+                <li className="border-b border-border px-4 py-3 last:border-b-0">
+                  <p className="text-[1.0625rem] font-medium">{plural(fotosComErro, 'foto de etiqueta', 'fotos de etiqueta')}</p>
+                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-muted-foreground">
+                    Não {fotosComErro === 1 ? 'foi lida' : 'foram lidas'}. Use “Tentar de novo” na conversa.
+                  </p>
+                </li>
+              ) : null}
+            </ul>
+            <Button
+              className="w-full"
+              onClick={() => {
+                limparFalhas()
+                setDetalhes(false)
+              }}
+            >
+              Entendi
+            </Button>
+          </div>
+        </Sheet>
+      </>
+    )
+  }
 
   if (estado === 'offline') {
     return (
