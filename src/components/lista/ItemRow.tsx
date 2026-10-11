@@ -142,13 +142,13 @@ export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPre
         <button
           type="button"
           onClick={() => aoAbrir(item)}
-          className="flex min-h-[3.75rem] min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl py-2 pr-4 text-left"
+          className="flex min-h-[3.25rem] min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl py-2 pr-4 text-left"
         >
           <span className="sr-only">Editar: </span>
           <span className="min-w-0">
             <span
               className={cn(
-                'block truncate text-[1.0625rem] leading-snug transition-colors duration-200',
+                'block truncate text-[1rem] leading-snug transition-colors duration-200',
                 item.comprado && 'text-muted-foreground line-through decoration-controle decoration-1',
               )}
             >
@@ -156,7 +156,7 @@ export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPre
             </span>
             {detalhe ? <span className="dinheiro mt-0.5 block truncate text-[0.8125rem] text-muted-foreground">{detalhe}</span> : null}
           </span>
-          <span className={cn('dinheiro shrink-0 text-[0.9375rem]', item.comprado ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+          <span className={cn('dinheiro shrink-0 text-[0.875rem]', item.comprado ? 'font-medium text-foreground' : 'text-muted-foreground')}>
             {item.comprado
               ? item.total_centavos === null
                 ? null

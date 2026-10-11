@@ -18,7 +18,7 @@ export function Toaster() {
           <div
             key={aviso.id}
             role={aviso.tipo === 'erro' ? 'alert' : 'status'}
-            className="pointer-events-auto flex max-w-full animate-surge items-center gap-1 rounded-3xl bg-moldura text-[0.9375rem] leading-snug text-moldura-foreground shadow-flutuante"
+            className="pointer-events-auto flex max-w-full animate-surge items-center gap-1 rounded-3xl bg-moldura text-[0.875rem] leading-snug text-moldura-foreground shadow-flutuante"
           >
             <button
               type="button"
@@ -38,7 +38,7 @@ export function Toaster() {
                   aviso.acao?.aoClicar()
                   dispensarAviso(aviso.id)
                 }}
-                className="mr-1.5 shrink-0 rounded-full px-3 py-2 text-[0.9375rem] font-semibold text-destaque"
+                className="mr-1.5 shrink-0 rounded-full px-3 py-2 text-[0.875rem] font-semibold text-destaque"
               >
                 {aviso.acao.rotulo}
               </button>

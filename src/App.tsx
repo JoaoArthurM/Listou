@@ -35,8 +35,8 @@ function Aviso({ titulo, children }: { titulo: string; children: React.ReactNode
   return (
     <Moldura>
       <div className="flex-1 px-6 pt-16">
-        <h1 className="font-display text-[2.75rem] italic leading-[0.95]">{titulo}</h1>
-        <div className="mt-4 text-[1.0625rem] leading-snug text-muted-foreground">{children}</div>
+        <h1 className="font-display text-[2.25rem] italic leading-[0.95]">{titulo}</h1>
+        <div className="mt-4 text-[1rem] leading-snug text-muted-foreground">{children}</div>
       </div>
     </Moldura>
   )

@@ -37,11 +37,11 @@ export function Gravador({ gravacao, aoEnviar, aoCancelar }: GravadorProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="secondary" size="icon" aria-label="Cancelar gravação" className="size-[3.25rem]" onClick={aoCancelar}>
+      <Button variant="secondary" size="icon" aria-label="Cancelar gravação" className="size-12" onClick={aoCancelar}>
         <X className="size-5" />
       </Button>
-      <div className="flex h-[3.25rem] min-w-0 flex-1 items-center gap-3 rounded-full bg-foreground pl-4 pr-1 text-background">
-        <span role="timer" aria-label="Tempo de gravação" className="dinheiro shrink-0 text-[0.9375rem]">
+      <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full bg-foreground pl-4 pr-1 text-background">
+        <span role="timer" aria-label="Tempo de gravação" className="dinheiro shrink-0 text-[0.875rem]">
           0:{String(segundos).padStart(2, '0')}
         </span>
         <span aria-hidden className="flex h-8 min-w-0 flex-1 items-center justify-end gap-[3px] overflow-hidden">

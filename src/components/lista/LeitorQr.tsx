@@ -73,7 +73,7 @@ export function LeitorQr({ aoLer, aoCancelar }: LeitorQrProps) {
   return (
     <div className="space-y-4">
       {erro ? (
-        <p role="alert" className="rounded-cartao bg-card p-4 text-[0.9375rem] leading-snug text-destructive shadow-cartao">
+        <p role="alert" className="rounded-cartao bg-card p-4 text-[0.875rem] leading-snug text-destructive shadow-cartao">
           {erro}
         </p>
       ) : (
@@ -82,7 +82,7 @@ export function LeitorQr({ aoLer, aoCancelar }: LeitorQrProps) {
             <video ref={video} muted playsInline className="size-full object-cover" aria-label="Imagem da câmera" />
             <span aria-hidden className="pointer-events-none absolute inset-[14%] rounded-2xl border-2 border-white/80" />
           </div>
-          <p role="status" className="text-center text-[0.9375rem] leading-snug text-muted-foreground">
+          <p role="status" className="text-center text-[0.875rem] leading-snug text-muted-foreground">
             {ignorado ? 'Esse QR code não é de um convite do Listou.' : 'Aponte para o QR code na tela do outro celular.'}
           </p>
         </>

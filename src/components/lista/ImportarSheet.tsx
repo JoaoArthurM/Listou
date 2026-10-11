@@ -107,7 +107,7 @@ export function ImportarSheet({ lista, itens, aoFechar }: ImportarSheetProps) {
 
         {origem === 'texto' ? (
           <div>
-            <label htmlFor={idTexto} className="mb-1.5 block text-[0.9375rem] font-medium">
+            <label htmlFor={idTexto} className="mb-1.5 block text-[0.875rem] font-medium">
               Lista
             </label>
             <textarea
@@ -124,10 +124,10 @@ export function ImportarSheet({ lista, itens, aoFechar }: ImportarSheetProps) {
             </p>
           </div>
         ) : outras.length === 0 ? (
-          <p className="text-[0.9375rem] leading-snug text-muted-foreground">Você ainda não tem outra lista para trazer itens.</p>
+          <p className="text-[0.875rem] leading-snug text-muted-foreground">Você ainda não tem outra lista para trazer itens.</p>
         ) : (
           <div>
-            <label htmlFor={idLista} className="mb-1.5 block text-[0.9375rem] font-medium">
+            <label htmlFor={idLista} className="mb-1.5 block text-[0.875rem] font-medium">
               Lista de origem
             </label>
             <div className="relative">
@@ -157,7 +157,7 @@ export function ImportarSheet({ lista, itens, aoFechar }: ImportarSheetProps) {
               <li key={item.nome} className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 last:border-b-0">
                 <span className="min-w-0 truncate">{item.nome}</span>
                 {item.qtd === null ? null : (
-                  <span className="dinheiro shrink-0 text-[0.9375rem] text-muted-foreground">
+                  <span className="dinheiro shrink-0 text-[0.875rem] text-muted-foreground">
                     {formatarQuantidade(item.qtd, item.unidade)}
                     {item.unidade === 'un' ? ' un' : ''}
                   </span>
@@ -165,7 +165,7 @@ export function ImportarSheet({ lista, itens, aoFechar }: ImportarSheetProps) {
               </li>
             ))}
             {entram.length > MAX_NA_PREVIA ? (
-              <li className="flex min-h-11 items-center text-[0.9375rem] text-muted-foreground">e mais {entram.length - MAX_NA_PREVIA}</li>
+              <li className="flex min-h-11 items-center text-[0.875rem] text-muted-foreground">e mais {entram.length - MAX_NA_PREVIA}</li>
             ) : null}
           </ul>
         ) : null}

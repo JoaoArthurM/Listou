@@ -27,7 +27,7 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
 function Moldura({ id, label, hint, error, className, children }: Pick<FieldProps, 'label' | 'hint' | 'error' | 'className'> & { id: string; children: ReactNode }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-[0.9375rem] font-medium">
+      <label htmlFor={id} className="mb-1.5 block text-[0.875rem] font-medium">
         {label}
       </label>
       {children}

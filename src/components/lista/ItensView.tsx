@@ -70,11 +70,11 @@ function Grupo({ titulo, icone: Icone, contagem, children }: GrupoProps) {
           type="button"
           aria-expanded={aberto}
           onClick={() => setAberto((a) => !a)}
-          className="flex min-h-14 w-full items-center gap-3 rounded-cartao pl-3.5 pr-4 text-left text-verde"
+          className="flex min-h-12 w-full items-center gap-3 rounded-cartao pl-3.5 pr-4 text-left text-verde"
         >
           <Icone aria-hidden className="size-6 shrink-0" strokeWidth={1.6} />
-          <span className="flex-1 text-[1.125rem] font-medium tracking-[-0.015em]">{titulo}</span>
-          <span className="dinheiro text-[0.9375rem] text-muted-foreground">{contagem}</span>
+          <span className="flex-1 text-[1.0625rem] font-medium tracking-[-0.015em]">{titulo}</span>
+          <span className="dinheiro text-[0.875rem] text-muted-foreground">{contagem}</span>
           <span className="grid size-6 place-items-center rounded-full border border-controle/70">
             <ChevronDown aria-hidden className={cn('size-3.5 transition-transform duration-300 ease-saida', !aberto && '-rotate-90')} />
           </span>
@@ -183,8 +183,8 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
           <div aria-busy className="h-48 animate-pulso rounded-cartao bg-muted" />
         ) : itens.length === 0 ? (
           <div className="px-2 pt-10">
-            <p className="font-display text-[2.5rem] italic leading-none">Lista em branco</p>
-            <p className="mt-3 max-w-[19rem] text-[1.0625rem] leading-snug text-muted-foreground">
+            <p className="font-display text-[2.125rem] italic leading-none">Lista em branco</p>
+            <p className="mt-3 max-w-[19rem] text-[1rem] leading-snug text-muted-foreground">
               {somenteLeitura
                 ? 'Esta compra foi finalizada sem itens.'
                 : 'Escreva o primeiro item aqui embaixo, peça no chat (“adiciona leite e pão”) ou traga uma lista pronta.'}
@@ -199,7 +199,7 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
         ) : (
           <>
             {!somenteLeitura && previsao.comPreco > 0 ? (
-              <p data-previsao className="px-2 text-[0.9375rem] leading-snug text-muted-foreground">
+              <p data-previsao className="px-2 text-[0.875rem] leading-snug text-muted-foreground">
                 Pelo preço da última compra, o que falta deve dar <span className="dinheiro font-medium text-foreground">{formatarReais(previsao.centavos)}</span>.
                 {previsao.semPreco > 0
                   ? ` ${plural(previsao.semPreco, 'item', 'itens')} sem preço anterior ${previsao.semPreco === 1 ? 'ficou' : 'ficaram'} fora da conta.`

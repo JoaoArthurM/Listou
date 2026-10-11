@@ -72,14 +72,14 @@ export function StatusConexao({ canal, className }: StatusConexaoProps) {
             <ul className="rounded-cartao bg-card shadow-cartao">
               {falhas.map((falha) => (
                 <li key={falha.id} className="border-b border-border px-4 py-3 last:border-b-0">
-                  <p className="text-[1.0625rem] font-medium">{falha.o_que}</p>
-                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-muted-foreground">{falha.motivo}</p>
+                  <p className="text-[1rem] font-medium">{falha.o_que}</p>
+                  <p className="mt-0.5 text-[0.875rem] leading-snug text-muted-foreground">{falha.motivo}</p>
                 </li>
               ))}
               {fotosComErro > 0 ? (
                 <li className="border-b border-border px-4 py-3 last:border-b-0">
-                  <p className="text-[1.0625rem] font-medium">{plural(fotosComErro, 'foto de etiqueta', 'fotos de etiqueta')}</p>
-                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-muted-foreground">
+                  <p className="text-[1rem] font-medium">{plural(fotosComErro, 'foto de etiqueta', 'fotos de etiqueta')}</p>
+                  <p className="mt-0.5 text-[0.875rem] leading-snug text-muted-foreground">
                     Não {fotosComErro === 1 ? 'foi lida' : 'foram lidas'}. Use “Tentar de novo” na conversa.
                   </p>
                 </li>

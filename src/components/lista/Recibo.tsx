@@ -74,7 +74,7 @@ export function Recibo({ lista, itens, carregando }: ReciboProps) {
       ) : (
         <article aria-label={`Recibo da compra ${lista.nome}`} className="animate-surge drop-shadow-[0_10px_18px_hsl(var(--sombra)/0.12)]">
           <Serrilha lado="cima" />
-          <div className="bg-card px-5 pb-1 pt-3 text-[0.9375rem] leading-snug text-foreground">
+          <div className="bg-card px-5 pb-1 pt-3 text-[0.875rem] leading-snug text-foreground">
             <header className="text-center">
               <p className="text-[0.6875rem] uppercase tracking-[0.22em] text-muted-foreground">Listou · compra finalizada</p>
               <h2 className="mt-2 break-words font-display text-[2.25rem] italic leading-none tracking-normal">{lista.nome}</h2>
@@ -125,8 +125,8 @@ export function Recibo({ lista, itens, carregando }: ReciboProps) {
 
             <div className="mt-3 border-y-2 border-double border-foreground/70 py-2.5">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[0.9375rem] font-semibold uppercase tracking-[0.18em]">Total</span>
-                <span className="dinheiro text-[1.625rem] font-semibold leading-none tracking-tight">{formatarReais(resumo.total_centavos)}</span>
+                <span className="text-[0.875rem] font-semibold uppercase tracking-[0.18em]">Total</span>
+                <span className="dinheiro text-[1.5rem] font-semibold leading-none tracking-tight">{formatarReais(resumo.total_centavos)}</span>
               </div>
             </div>
 

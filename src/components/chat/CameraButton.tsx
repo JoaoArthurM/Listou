@@ -42,7 +42,7 @@ export function CameraButton({ aoFotografar, disabled, className }: CameraButton
           entrada.current?.click()
         }}
         className={cn(
-          'grid size-[3.25rem] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
+          'grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
           className,
         )}
       >

@@ -66,7 +66,7 @@ export function Balao({ lado, autor, pensando, children, className }: BalaoProps
         {nome ? <span className="mb-1 px-1 text-xs font-medium text-muted-foreground">{nome}</span> : null}
         <div
           className={cn(
-            'whitespace-pre-line break-words rounded-[1.375rem] px-4 py-2.5 text-[1.0625rem] leading-snug',
+            'whitespace-pre-line break-words rounded-[1.375rem] px-4 py-2.5 text-[1rem] leading-snug',
             estilos[lado],
             className,
           )}
@@ -95,7 +95,7 @@ export function Digitando({ lado, texto }: { lado: 'outro' | 'assistente'; texto
     <Balao
       lado={lado}
       pensando={lado === 'assistente'}
-      className={cn('flex min-h-11 items-center gap-2.5 text-[0.9375rem]', lado === 'assistente' && 'text-muted-foreground')}
+      className={cn('flex min-h-11 items-center gap-2.5 text-[0.875rem]', lado === 'assistente' && 'text-muted-foreground')}
     >
       <Pontos className={lado === 'assistente' ? 'text-primary' : undefined} />
       {/* A chave refaz a entrada suave a cada frase nova. */}

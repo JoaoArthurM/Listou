@@ -7,7 +7,7 @@ export function Dica({ children, className }: { children: ReactNode; className?:
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 rounded-2xl border border-dica-borda bg-dica px-4 py-3 text-[0.9375rem] leading-snug text-dica-foreground shadow-[0_6px_14px_-10px_hsl(var(--sombra)/0.35)]',
+        'flex items-start gap-2.5 rounded-2xl border border-dica-borda bg-dica px-4 py-3 text-[0.875rem] leading-snug text-dica-foreground shadow-[0_6px_14px_-10px_hsl(var(--sombra)/0.35)]',
         className,
       )}
     >

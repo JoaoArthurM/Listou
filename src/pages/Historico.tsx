@@ -31,16 +31,16 @@ function LinhaHistorico({ lista, meuId }: { lista: ListaComResumo; meuId: string
       {/* Coluna de data à esquerda, como na agenda da referência. */}
       <time dateTime={data.toISOString()} className="flex w-9 shrink-0 flex-col items-center justify-center text-muted-foreground">
         <span className="text-sm capitalize">{diaDaSemana.format(data).replace('.', '')}</span>
-        <span className="dinheiro text-[1.1875rem] font-medium leading-tight text-foreground">{data.getDate()}</span>
+        <span className="dinheiro text-[1.125rem] font-medium leading-tight text-foreground">{data.getDate()}</span>
         <span className="text-xs">{mes.format(data).replace('.', '')}</span>
       </time>
-      <a href={`/lista/${lista.id}?aba=itens`} onClick={abrir} className="flex min-h-[4.75rem] min-w-0 flex-1 items-center gap-3 rounded-cartao bg-card p-2.5 pr-3 shadow-cartao">
+      <a href={`/lista/${lista.id}?aba=itens`} onClick={abrir} className="flex min-h-[4.25rem] min-w-0 flex-1 items-center gap-3 rounded-cartao bg-card p-2.5 pr-3 shadow-cartao">
         <img src={fotoDaLista(lista.id)} alt="" decoding="async" className="size-14 shrink-0 rounded-2xl object-cover" />
         <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-[1.0625rem] font-medium leading-tight">{lista.nome}</span>
-          <span className="mt-0.5 block truncate text-[0.9375rem] text-muted-foreground">{detalhe}</span>
+          <span className="line-clamp-2 text-[1rem] font-medium leading-tight">{lista.nome}</span>
+          <span className="mt-0.5 block truncate text-[0.875rem] text-muted-foreground">{detalhe}</span>
         </span>
-        <span className="dinheiro shrink-0 text-[1.0625rem] font-medium">
+        <span className="dinheiro shrink-0 text-[1rem] font-medium">
           {formatarReais(lista.resumo.total_centavos)}
         </span>
       </a>
@@ -57,8 +57,8 @@ export function Historico() {
   return (
     <Moldura rodape={<NavInferior atual="historico" />}>
       <header className="shrink-0 px-5 pt-6">
-        <h1 className="text-[1.5rem] font-medium leading-tight tracking-[-0.025em]">Histórico</h1>
-        <p className="dinheiro mt-0.5 whitespace-normal text-[1.0625rem] text-muted-foreground">
+        <h1 className="text-[1.375rem] font-medium leading-tight tracking-[-0.025em]">Histórico</h1>
+        <p className="dinheiro mt-0.5 whitespace-normal text-[1rem] text-muted-foreground">
           {listas && listas.length > 0
             ? `${plural(listas.length, 'compra finalizada', 'compras finalizadas')} · ${formatarReais(gasto)}`
             : 'Compras finalizadas'}
@@ -73,7 +73,7 @@ export function Historico() {
           </div>
         ) : isError && !listas ? (
           <div className="pt-6">
-            <p className="text-[1.0625rem] leading-snug">Não deu para carregar o histórico. Confira a conexão.</p>
+            <p className="text-[1rem] leading-snug">Não deu para carregar o histórico. Confira a conexão.</p>
             <Button variant="secondary" className="mt-4" onClick={() => void refetch()}>
               Tentar de novo
             </Button>
@@ -86,8 +86,8 @@ export function Historico() {
           </ul>
         ) : (
           <div className="pt-8">
-            <p className="font-display text-[2.75rem] italic leading-[0.95]">Nada por aqui ainda</p>
-            <p className="mt-4 max-w-[20rem] text-[1.0625rem] leading-snug text-muted-foreground">
+            <p className="font-display text-[2.25rem] italic leading-[0.95]">Nada por aqui ainda</p>
+            <p className="mt-4 max-w-[20rem] text-[1rem] leading-snug text-muted-foreground">
               Quando passar no caixa, abra as opções da lista e toque em “Finalizar compra”. Ela vem para cá com o total gasto.
             </p>
           </div>

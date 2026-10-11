@@ -60,10 +60,10 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
 
   return (
     <div className="rounded-cartao border border-border bg-card p-4 shadow-cartao">
-      {texto ? <p className="mb-2.5 whitespace-pre-line text-[1.0625rem] leading-snug text-muted-foreground">{texto}</p> : null}
+      {texto ? <p className="mb-2.5 whitespace-pre-line text-[1rem] leading-snug text-muted-foreground">{texto}</p> : null}
       <ul className="space-y-1.5">
         {dados.acoes.map((acao, i) => (
-          <li key={i} className="dinheiro whitespace-normal text-[1.0625rem] leading-snug">
+          <li key={i} className="dinheiro whitespace-normal text-[1rem] leading-snug">
             {descrever(acao)}
           </li>
         ))}

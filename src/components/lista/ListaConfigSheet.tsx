@@ -158,14 +158,14 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                 <dd className="dinheiro text-sucesso">{formatarReais(economia.cartao)}</dd>
               </div>
             ) : null}
-            <div className="flex min-h-14 items-center justify-between gap-3">
+            <div className="flex min-h-12 items-center justify-between gap-3">
               <dt className="font-medium">Total do carrinho</dt>
-              <dd className="dinheiro text-[1.375rem] font-semibold tracking-[-0.02em]">{formatarReais(resumo.total_centavos)}</dd>
+              <dd className="dinheiro text-[1.25rem] font-semibold tracking-[-0.02em]">{formatarReais(resumo.total_centavos)}</dd>
             </div>
           </dl>
 
           {economia.total > 0 ? (
-            <p className="text-[0.9375rem] leading-snug text-muted-foreground">
+            <p className="text-[0.875rem] leading-snug text-muted-foreground">
               A economia é a diferença para o preço de varejo das mesmas etiquetas: no varejo esta compra sairia por{' '}
               <span className="dinheiro">{formatarReais(resumo.total_centavos + economia.total)}</span>.
             </p>
@@ -178,7 +178,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
             </Dica>
           ) : null}
           {resumo.naoComprados.length > 0 ? (
-            <p className="text-[0.9375rem] leading-snug text-muted-foreground">
+            <p className="text-[0.875rem] leading-snug text-muted-foreground">
               {plural(resumo.naoComprados.length, 'item ficou', 'itens ficaram')} sem comprar: {algunsNomes(resumo.naoComprados)}.
             </p>
           ) : null}
@@ -205,21 +205,21 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
     >
       <div className="space-y-7">
         {finalizada ? (
-          <p className="rounded-cartao bg-card p-4 text-[0.9375rem] leading-snug text-muted-foreground shadow-cartao">
+          <p className="rounded-cartao bg-card p-4 text-[0.875rem] leading-snug text-muted-foreground shadow-cartao">
             Esta compra está finalizada: não dá para convidar ninguém nem alterar dados. Reabra a lista para mexer nela.
           </p>
         ) : (
           <section aria-labelledby="titulo-convite">
-            <h3 id="titulo-convite" className="text-[1.0625rem] font-medium">
+            <h3 id="titulo-convite" className="text-[1rem] font-medium">
               Convidar
             </h3>
             {codigo ? (
               <div className="mt-2.5 rounded-cartao bg-card p-4 shadow-cartao">
-                <p className="text-[0.9375rem] text-muted-foreground">Código válido por 7 dias</p>
+                <p className="text-[0.875rem] text-muted-foreground">Código válido por 7 dias</p>
                 <p className="dinheiro mt-1.5 select-all text-[2rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
                 <div className="mt-4">
                   <QrCodigo conteudo={linkDoConvite(codigo)} rotulo={`QR code do convite ${codigo}`} />
-                  <p className="mt-2 text-center text-[0.9375rem] text-muted-foreground">Ou peça para ler este QR code no outro celular</p>
+                  <p className="mt-2 text-center text-[0.875rem] text-muted-foreground">Ou peça para ler este QR code no outro celular</p>
                 </div>
                 <Button variant="dark" className="mt-4 w-full" onClick={() => void compartilhar()}>
                   {copiado ? <Check className="size-5" /> : 'share' in navigator ? <Share2 className="size-5" /> : <Copy className="size-5" />}
@@ -228,7 +228,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
               </div>
             ) : criarConvite.isError ? (
               <>
-                <p role="alert" className="mt-1 text-[0.9375rem] leading-snug text-destructive">
+                <p role="alert" className="mt-1 text-[0.875rem] leading-snug text-destructive">
                   {mensagem(criarConvite.error)}
                 </p>
                 <Button variant="secondary" className="mt-3 w-full" onClick={buscarConvite}>
@@ -242,7 +242,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
         )}
 
         <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
-          <h3 className="text-[1.0625rem] font-medium">Dados da lista</h3>
+          <h3 className="text-[1rem] font-medium">Dados da lista</h3>
           <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
           <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
           <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
@@ -258,16 +258,16 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
 
         {cartoes.length > 0 ? (
           <section aria-labelledby="titulo-cartoes">
-            <h3 id="titulo-cartoes" className="text-[1.0625rem] font-medium">
+            <h3 id="titulo-cartoes" className="text-[1rem] font-medium">
               Cartões da loja
             </h3>
-            <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
+            <p className="mt-1 text-[0.875rem] leading-snug text-muted-foreground">
               O preço de cartão só entra na conta para os cartões que vocês têm.
             </p>
             <ul className="mt-2.5 rounded-cartao bg-card shadow-cartao">
               {cartoes.map((cartao) => (
-                <li key={cartao.nome} className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 last:border-b-0">
-                  <span className="min-w-0 truncate text-[1.0625rem]">{nomeCartao(cartao.nome)}</span>
+                <li key={cartao.nome} className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4 last:border-b-0">
+                  <span className="min-w-0 truncate text-[1rem]">{nomeCartao(cartao.nome)}</span>
                   <Button
                     variant={cartao.tem ? 'dark' : 'secondary'}
                     size="sm"

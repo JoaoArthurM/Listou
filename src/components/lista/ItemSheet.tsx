@@ -108,7 +108,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
           <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={80} autoComplete="off" />
 
           <div>
-            <p className="mb-1.5 text-[0.9375rem] font-medium">Vendido por</p>
+            <p className="mb-1.5 text-[0.875rem] font-medium">Vendido por</p>
             <Segmented
               label="Vendido por"
               value={unidade}
@@ -121,7 +121,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
           </div>
 
           <div>
-            <label htmlFor={idSecao} className="mb-1.5 block text-[0.9375rem] font-medium">
+            <label htmlFor={idSecao} className="mb-1.5 block text-[0.875rem] font-medium">
               Seção do mercado
             </label>
             <div className="relative">
@@ -143,7 +143,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
           </div>
 
           <div>
-            <p className="mb-1.5 text-[0.9375rem] font-medium">Situação</p>
+            <p className="mb-1.5 text-[0.875rem] font-medium">Situação</p>
             <Segmented
               label="Situação"
               value={comprado ? 'carrinho' : 'faltando'}
@@ -188,7 +188,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
                 </p>
               ) : null}
               {qtdComprada !== null && preco !== null && tipoFaixa ? (
-                <p className="dinheiro rounded-2xl bg-muted px-4 py-3 text-[0.9375rem] font-medium">
+                <p className="dinheiro rounded-2xl bg-muted px-4 py-3 text-[0.875rem] font-medium">
                   {linhaCalculo(qtdComprada, unidade, preco, tipoFaixa, faixaAuto?.cartao)}
                 </p>
               ) : null}
@@ -211,7 +211,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
 
         {item.foto_path ? (
           <div>
-            <p className="mb-1.5 text-[0.9375rem] font-medium">Etiqueta fotografada</p>
+            <p className="mb-1.5 text-[0.875rem] font-medium">Etiqueta fotografada</p>
             <FotoArmazenada caminho={item.foto_path} className="size-24 rounded-2xl" />
           </div>
         ) : null}

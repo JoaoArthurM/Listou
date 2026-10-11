@@ -25,8 +25,8 @@ export function Convite({ codigo }: { codigo: string }) {
       <div className="flex-1 px-6 pt-16">
         {erro ? (
           <>
-            <h1 className="font-display text-[2.75rem] italic leading-[0.95]">Convite não aceito</h1>
-            <p role="alert" className="mt-4 text-[1.0625rem] leading-snug text-muted-foreground">
+            <h1 className="font-display text-[2.25rem] italic leading-[0.95]">Convite não aceito</h1>
+            <p role="alert" className="mt-4 text-[1rem] leading-snug text-muted-foreground">
               {erro}
             </p>
             <Button className="mt-6" onClick={() => navegar('/', { substituir: true })}>
@@ -35,8 +35,8 @@ export function Convite({ codigo }: { codigo: string }) {
           </>
         ) : (
           <>
-            <h1 className="font-display text-[2.75rem] italic leading-[0.95]">Entrando na lista…</h1>
-            <p role="status" className="dinheiro mt-4 text-[1.0625rem] text-muted-foreground">
+            <h1 className="font-display text-[2.25rem] italic leading-[0.95]">Entrando na lista…</h1>
+            <p role="status" className="dinheiro mt-4 text-[1rem] text-muted-foreground">
               Convite {codigo.toUpperCase()}
             </p>
           </>

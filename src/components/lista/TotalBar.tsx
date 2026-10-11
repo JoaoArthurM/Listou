@@ -27,12 +27,12 @@ export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCent
           <p className="dinheiro text-[0.8125rem] text-moldura-muted">
             Carrinho{previstoCentavos === null ? null : ` · previsão ${formatarReais(previstoCentavos)}`}
           </p>
-          <p aria-live="polite" className="dinheiro mt-0.5 text-[1.875rem] font-semibold leading-none tracking-[-0.03em]">
+          <p aria-live="polite" className="dinheiro mt-0.5 text-[1.625rem] font-semibold leading-none tracking-[-0.03em]">
             {formatarReais(total_centavos)}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="dinheiro text-[0.9375rem]">
+          <p className="dinheiro text-[0.875rem]">
             {itens_comprados} de {plural(itens_total, 'item', 'itens')}
           </p>
           {saldo !== null || semPreco > 0 ? (

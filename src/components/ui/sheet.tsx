@@ -42,9 +42,9 @@ export function Sheet({ open, onOpenChange, title, description, children, classN
           <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-controle/40" />
           <header className="flex shrink-0 items-start justify-between gap-4 pb-3 pl-5 pr-3 pt-3">
             <div className="min-w-0 pt-1.5">
-              <Dialog.Title className="text-[1.375rem] font-medium leading-tight tracking-[-0.02em]">{title}</Dialog.Title>
+              <Dialog.Title className="text-[1.25rem] font-medium leading-tight tracking-[-0.02em]">{title}</Dialog.Title>
               {description ? (
-                <Dialog.Description className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
+                <Dialog.Description className="mt-1 text-[0.875rem] leading-snug text-muted-foreground">
                   {description}
                 </Dialog.Description>
               ) : null}

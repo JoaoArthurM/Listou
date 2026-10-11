@@ -155,7 +155,7 @@ export function BarraAdicionar({ lista, itens, aoImportar, aoAdicionar }: BarraA
 
       {resultado && !ocupado ? (
         <div role="status" className="mb-2 flex animate-surge items-start gap-2 rounded-cartao bg-card py-3 pl-4 pr-1.5 shadow-cartao">
-          <p className="min-w-0 flex-1 whitespace-pre-line text-[0.9375rem] leading-snug">{resultado}</p>
+          <p className="min-w-0 flex-1 whitespace-pre-line text-[0.875rem] leading-snug">{resultado}</p>
           <Button variant="ghost" size="icon" aria-label="Fechar resultado" className="-mt-1.5 shrink-0" onClick={() => setResultado(null)}>
             <X className="size-5" />
           </Button>
@@ -173,10 +173,10 @@ export function BarraAdicionar({ lista, itens, aoImportar, aoAdicionar }: BarraA
         />
       ) : (
         <form onSubmit={enviar} className="flex items-center gap-2">
-          <Button type="button" variant="secondary" size="icon" aria-label="Importar itens" className="size-[3.25rem]" onClick={aoImportar}>
+          <Button type="button" variant="secondary" size="icon" aria-label="Importar itens" className="size-12" onClick={aoImportar}>
             <ListPlus className="size-[1.375rem]" />
           </Button>
-          <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
+          <div className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
             <input
               value={texto}
               onChange={(e) => setTexto(e.target.value)}

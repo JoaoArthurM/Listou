@@ -103,7 +103,7 @@ export function CodigoSheet({ aoFechar }: { aoFechar: () => void }) {
           autoCorrect="off"
           spellCheck={false}
           data-autofocus
-          className="[&_input]:dinheiro [&_input]:h-14 [&_input]:text-center [&_input]:text-2xl [&_input]:font-semibold [&_input]:tracking-[0.2em]"
+          className="[&_input]:dinheiro [&_input]:h-12 [&_input]:text-center [&_input]:text-2xl [&_input]:font-semibold [&_input]:tracking-[0.2em]"
         />
         <Button type="submit" className="w-full" disabled={aceitar.isPending}>
           {aceitar.isPending ? 'Entrando…' : 'Entrar na lista'}

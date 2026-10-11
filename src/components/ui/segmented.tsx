@@ -29,7 +29,7 @@ export function Segmented<T extends string>({ value, onChange, options, label, c
             aria-checked={ativa}
             onClick={() => onChange(opcao.value)}
             className={cn(
-              'flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border px-4 text-[1.0625rem] font-medium transition-[background-color,border-color,color] duration-200 ease-saida',
+              'flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border px-4 text-[1rem] font-medium transition-[background-color,border-color,color] duration-200 ease-saida',
               ativa
                 ? 'border-foreground bg-foreground text-background'
                 : 'border-controle/45 bg-card text-foreground hover:border-controle',

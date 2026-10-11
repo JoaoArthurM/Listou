@@ -195,8 +195,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
 
         {vazio ? (
           <div className="px-1 pt-8">
-            <p className="font-display text-[2.5rem] italic leading-none">Bora ao mercado</p>
-            <p className="mt-3 max-w-[20rem] text-[1.0625rem] leading-snug text-muted-foreground">
+            <p className="font-display text-[2.125rem] italic leading-none">Bora ao mercado</p>
+            <p className="mt-3 max-w-[20rem] text-[1rem] leading-snug text-muted-foreground">
               {somenteLeitura
                 ? 'Esta compra foi finalizada sem conversa.'
                 : 'Fotografe a etiqueta de preço e diga quantos levou: eu escolho o preço certo e somo o carrinho. Também entendo pedidos escritos ou falados.'}
@@ -343,7 +343,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                 type="button"
                 disabled={offline}
                 onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null, antes: idsAtuais() })}
-                className="flex h-11 items-center gap-2 rounded-full border border-controle/70 bg-card pl-4 pr-3 text-[0.9375rem] font-medium transition-colors active:bg-muted disabled:opacity-50"
+                className="flex h-11 items-center gap-2 rounded-full border border-controle/70 bg-card pl-4 pr-3 text-[0.875rem] font-medium transition-colors active:bg-muted disabled:opacity-50"
               >
                 {sugestao}
                 <ArrowUpRight aria-hidden className="size-4 text-primary-texto" strokeWidth={2.4} />
@@ -377,7 +377,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                   void fotografarEtiqueta(lista.id, usuario.id, arquivo)
                 }}
               />
-              <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
+              <div className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
                 <input
                   value={texto}
                   onChange={(e) => aoDigitar(e.target.value)}

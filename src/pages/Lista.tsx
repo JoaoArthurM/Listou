@@ -49,8 +49,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
           </div>
         ) : (
           <div className="px-6 pt-12">
-            <h1 className="font-display text-[2.5rem] italic leading-none">Lista não encontrada</h1>
-            <p className="mt-3 text-[1.0625rem] leading-snug text-muted-foreground">
+            <h1 className="font-display text-[2.125rem] italic leading-none">Lista não encontrada</h1>
+            <p className="mt-3 text-[1rem] leading-snug text-muted-foreground">
               Ela pode ter sido excluída, ou você saiu dela. Se alguém te convidou, peça o código de novo.
             </p>
             <Button className="mt-6" onClick={() => navegar('/', { substituir: true })}>
@@ -89,8 +89,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
             <ArrowLeft className="size-6" />
           </Button>
           <div className="min-w-0 flex-1 text-center">
-            <h1 className="truncate text-[1.25rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
-            <p className="dinheiro truncate text-[0.9375rem] text-muted-foreground">{subtitulo}</p>
+            <h1 className="truncate text-[1.125rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
+            <p className="dinheiro truncate text-[0.875rem] text-muted-foreground">{subtitulo}</p>
           </div>
           <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => setOpcoesAbertas(true)}>
             <Ellipsis className="size-6" />

@@ -39,13 +39,13 @@ const NOVO = 'novo'
 function Resolvido({ resultado }: { resultado: ResultadoCompra }) {
   return (
     <div className="rounded-cartao bg-card p-4 shadow-cartao">
-      <p className="flex items-center gap-2 text-[1.0625rem] font-medium">
+      <p className="flex items-center gap-2 text-[1rem] font-medium">
         <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-white">
           <Check aria-hidden className="size-3" strokeWidth={3.5} />
         </span>
         <span className="truncate">{resultado.nome}</span>
       </p>
-      <p className="dinheiro mt-1.5 whitespace-normal text-[0.9375rem] text-muted-foreground">
+      <p className="dinheiro mt-1.5 whitespace-normal text-[0.875rem] text-muted-foreground">
         {linhaCalculo(resultado.qtd, resultado.unidade, resultado.preco_unit_centavos, resultado.faixa_aplicada, resultado.cartao)}
       </p>
     </div>
@@ -55,7 +55,7 @@ function Resolvido({ resultado }: { resultado: ResultadoCompra }) {
 /** O que a IA não conseguiu ler, dito com todas as letras, e o que fazer a respeito. */
 function Pendencias({ problemas, comoResolver }: { problemas: Problema[]; comoResolver: string }) {
   return (
-    <div role="alert" className="mt-3 flex items-start gap-2.5 rounded-2xl border border-destructive/35 bg-destructive/[0.06] px-4 py-3 text-[0.9375rem] leading-snug">
+    <div role="alert" className="mt-3 flex items-start gap-2.5 rounded-2xl border border-destructive/35 bg-destructive/[0.06] px-4 py-3 text-[0.875rem] leading-snug">
       <CircleAlert aria-hidden className="mt-0.5 size-[1.125rem] shrink-0 text-destructive" />
       <div className="min-w-0 flex-1">
         <ul className="space-y-1 font-medium text-destructive">
@@ -105,7 +105,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
   if (dados.estado === 'confirmado' && dados.resultado) return <Resolvido resultado={dados.resultado} />
   if (dados.estado !== 'aberto' || somenteLeitura) {
     return (
-      <p className="px-1 text-[0.9375rem] text-muted-foreground">
+      <p className="px-1 text-[0.875rem] text-muted-foreground">
         Etiqueta {extracao.produto ? `de “${extracao.produto}”` : 'sem nome lido'} não adicionada.
       </p>
     )
@@ -178,7 +178,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
   return (
     <div className="rounded-cartao bg-card p-4 shadow-cartao">
       <div className="flex items-start justify-between gap-2">
-        <h3 className={cn('min-w-0 pt-1 text-[1.125rem] font-medium leading-snug', extracao.produto === null && 'text-muted-foreground')}>
+        <h3 className={cn('min-w-0 pt-1 text-[1.0625rem] font-medium leading-snug', extracao.produto === null && 'text-muted-foreground')}>
           {extracao.produto ?? 'Etiqueta sem nome lido'}
         </h3>
         <Button
@@ -197,7 +197,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
       {/* Com o preço em dúvida as faixas lidas não são aplicadas; elas reaparecem como sugestão junto do campo de preço. */}
       {faixas.length > 0 && !precoTravado ? (
-        <p className="dinheiro mt-0.5 whitespace-normal text-[0.9375rem] text-muted-foreground">{linhaFaixas(faixas)}</p>
+        <p className="dinheiro mt-0.5 whitespace-normal text-[0.875rem] text-muted-foreground">{linhaFaixas(faixas)}</p>
       ) : null}
 
       {problemas.length > 0 ? <Pendencias problemas={problemas} comoResolver={comoResolver} /> : null}
@@ -214,7 +214,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
           id={idSelecao}
           value={destino}
           onChange={(e) => setDestino(e.target.value)}
-          className="h-11 w-full appearance-none truncate rounded-full border border-border bg-background pl-4 pr-10 text-[0.9375rem] font-medium"
+          className="h-11 w-full appearance-none truncate rounded-full border border-border bg-background pl-4 pr-10 text-[0.875rem] font-medium"
         >
           <option value={NOVO}>Novo item na lista</option>
           {faltando.map((item) => (
@@ -240,7 +240,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
       {unidadeIncerta ? (
         <div className="mt-3">
-          <p className="mb-1.5 text-[0.9375rem] font-medium">Vendido por</p>
+          <p className="mb-1.5 text-[0.875rem] font-medium">Vendido por</p>
           <Segmented<Unidade | ''>
             label="Vendido por"
             value={unidadeEscolhida ?? ''}
@@ -259,7 +259,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
       {cartaoPendente ? (
         <div className="mt-3 rounded-2xl bg-muted p-3">
-          <p className="text-[0.9375rem] font-medium">Vocês têm o cartão {nomeCartao(cartaoPendente)}?</p>
+          <p className="text-[0.875rem] font-medium">Vocês têm o cartão {nomeCartao(cartaoPendente)}?</p>
           <div className="mt-2 flex gap-2">
             <Button variant="dark" size="sm" className="flex-1" onClick={() => responderCartao.mutate({ cartao: cartaoPendente, tem: true })}>
               Temos
@@ -273,7 +273,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
       {unidadeDefinida ? (
         <>
-          <p className="mt-4 text-[0.9375rem] font-medium">{unidade === 'kg' ? 'Quanto pesou?' : 'Quantos?'}</p>
+          <p className="mt-4 text-[0.875rem] font-medium">{unidade === 'kg' ? 'Quanto pesou?' : 'Quantos?'}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {botoesQuantidade(precoTravado ? [] : faixas, unidade).map((n) => {
               const escolhido = qtd === n
@@ -288,7 +288,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
                     setQtdTexto(String(n).replace('.', ','))
                   }}
                   className={cn(
-                    'dinheiro grid h-14 min-w-12 place-items-center rounded-full border px-3 text-[1.0625rem] font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-saida',
+                    'dinheiro grid h-12 min-w-12 place-items-center rounded-full border px-3 text-[1rem] font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-saida',
                     escolhido
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background text-foreground',
@@ -304,7 +304,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
               aria-label={unidade === 'kg' ? 'Peso em kg' : 'Outra quantidade'}
               placeholder={unidade === 'kg' ? '0,000 kg' : 'Outro'}
               inputMode={unidade === 'kg' ? 'decimal' : 'numeric'}
-              className="dinheiro h-14 min-w-24 flex-1 rounded-full text-center"
+              className="dinheiro h-12 min-w-24 flex-1 rounded-full text-center"
             />
           </div>
         </>
@@ -312,7 +312,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
       {precoManual ? (
         <div className="mt-3">
-          <label htmlFor={`${idSelecao}-preco`} className="mb-1.5 block text-[0.9375rem] font-medium">
+          <label htmlFor={`${idSelecao}-preco`} className="mb-1.5 block text-[0.875rem] font-medium">
             {unidade === 'kg' ? 'Preço do kg (R$)' : 'Preço da unidade (R$)'}
           </label>
           <Input
@@ -338,7 +338,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
                     type="button"
                     aria-label={`Usar ${rotulo}`}
                     onClick={() => setPrecoTexto(formatarValor(faixa.preco_centavos))}
-                    className="dinheiro min-h-11 rounded-full border border-border bg-background px-3.5 text-[0.9375rem] font-medium"
+                    className="dinheiro min-h-11 rounded-full border border-border bg-background px-3.5 text-[0.875rem] font-medium"
                   >
                     {rotulo}
                   </button>
@@ -350,7 +350,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
       ) : null}
 
       {pronto ? (
-        <p aria-live="polite" className="dinheiro mt-4 whitespace-normal rounded-2xl bg-muted px-4 py-3 text-[1.0625rem] font-semibold">
+        <p aria-live="polite" className="dinheiro mt-4 whitespace-normal rounded-2xl bg-muted px-4 py-3 text-[1rem] font-semibold">
           {linhaCalculo(qtd, unidade, preco, faixaAplicada, cartaoAplicado)}
         </p>
       ) : null}

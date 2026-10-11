@@ -37,7 +37,7 @@ function corpoDe(mensagem: Mensagem): ReactNode {
             </span>
             <span className="min-w-0 break-words">{resultado.nome}</span>
           </span>
-          <span className="dinheiro mt-1 block text-[0.9375rem] text-muted-foreground">
+          <span className="dinheiro mt-1 block text-[0.875rem] text-muted-foreground">
             {linhaCalculo(resultado.qtd, resultado.unidade, resultado.preco_unit_centavos, resultado.faixa_aplicada, resultado.cartao)}
           </span>
         </>
@@ -99,16 +99,16 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
         </div>
       ) : dias.length === 0 ? (
         <div className="px-1 pt-8">
-          <p className="font-display text-[2.5rem] italic leading-none">Sem registros</p>
-          <p className="mt-3 max-w-[20rem] text-[1.0625rem] leading-snug text-muted-foreground">Esta compra foi finalizada sem conversa.</p>
+          <p className="font-display text-[2.125rem] italic leading-none">Sem registros</p>
+          <p className="mt-3 max-w-[20rem] text-[1rem] leading-snug text-muted-foreground">Esta compra foi finalizada sem conversa.</p>
         </div>
       ) : (
         <div className="space-y-5">
           {dias.map((dia) => (
             <section key={dia.chave} aria-label={dia.data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })} className="flex gap-3">
               <div className="w-10 shrink-0 pt-3 text-center text-muted-foreground">
-                <p className="text-[0.9375rem] capitalize leading-tight">{diaSemana.format(dia.data).replace('.', '')}</p>
-                <p className="dinheiro text-[1.1875rem] leading-tight text-foreground/80">{dia.data.getDate()}</p>
+                <p className="text-[0.875rem] capitalize leading-tight">{diaSemana.format(dia.data).replace('.', '')}</p>
+                <p className="dinheiro text-[1.125rem] leading-tight text-foreground/80">{dia.data.getDate()}</p>
               </div>
               <ol className="min-w-0 flex-1 space-y-2">
                 {dia.registros.map((registro) => (
@@ -121,7 +121,7 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
                         {hora.format(registro.quando)}
                       </time>
                     </p>
-                    <div className="mt-0.5 text-[1.0625rem] leading-snug">{registro.corpo}</div>
+                    <div className="mt-0.5 text-[1rem] leading-snug">{registro.corpo}</div>
                   </li>
                 ))}
               </ol>

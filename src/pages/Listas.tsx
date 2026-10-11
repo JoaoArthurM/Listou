@@ -43,15 +43,15 @@ function CartaoDestaque({ lista, meuId, sozinho }: { lista: ListaComResumo; meuI
         <img src={fotoDaLista(lista.id)} alt="" decoding="async" />
         <div className="flex flex-wrap items-center gap-2">
           {lista.mercado ? (
-            <span className="max-w-full truncate rounded-full bg-white/20 px-3.5 py-1.5 text-[0.9375rem] backdrop-blur-sm">{lista.mercado}</span>
+            <span className="max-w-full truncate rounded-full bg-white/20 px-3.5 py-1.5 text-[0.875rem] backdrop-blur-sm">{lista.mercado}</span>
           ) : null}
-          <span className="dinheiro rounded-full bg-destaque px-3.5 py-1.5 text-[0.9375rem] font-medium text-destaque-foreground">
+          <span className="dinheiro rounded-full bg-destaque px-3.5 py-1.5 text-[0.875rem] font-medium text-destaque-foreground">
             {resumo.itens_total === 0 ? 'Lista vazia' : `${resumo.itens_comprados} de ${plural(resumo.itens_total, 'item', 'itens')}`}
           </span>
         </div>
         <div>
           <h2 className="line-clamp-3 break-words font-display text-[3.5rem] italic leading-[0.92] tracking-[-0.01em]">{lista.nome}</h2>
-          <p className="dinheiro mt-3 whitespace-normal text-[1.0625rem] text-white/85">
+          <p className="dinheiro mt-3 whitespace-normal text-[1rem] text-white/85">
             {formatarReais(resumo.total_centavos)} no carrinho{com ? ` · ${com}` : ''}
           </p>
         </div>
@@ -75,12 +75,12 @@ function LinhaLista({ lista, meuId }: { lista: ListaComResumo; meuId: string }) 
       <a
         href={`/lista/${lista.id}`}
         onClick={(e) => abrir(e, lista.id)}
-        className="flex min-h-[4.75rem] items-center gap-3.5 rounded-cartao bg-card p-2.5 pr-3 shadow-cartao"
+        className="flex min-h-[4.25rem] items-center gap-3.5 rounded-cartao bg-card p-2.5 pr-3 shadow-cartao"
       >
         <img src={fotoDaLista(lista.id)} alt="" decoding="async" className="size-14 shrink-0 rounded-2xl object-cover" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[1.0625rem] font-medium">{lista.nome}</span>
-          <span className="dinheiro block truncate text-[0.9375rem] text-muted-foreground">{detalhe}</span>
+          <span className="block truncate text-[1rem] font-medium">{lista.nome}</span>
+          <span className="dinheiro block truncate text-[0.875rem] text-muted-foreground">{detalhe}</span>
         </span>
         <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
       </a>
@@ -108,11 +108,11 @@ export function Listas() {
     <Moldura rodape={<NavInferior atual="listas" />}>
       <header className="flex shrink-0 items-start justify-between gap-4 px-5 pt-6">
         <div className="min-w-0">
-          <h1 className="truncate text-[1.5rem] font-medium leading-tight tracking-[-0.025em]">
+          <h1 className="truncate text-[1.375rem] font-medium leading-tight tracking-[-0.025em]">
             {saudacao()}
             {nome ? `, ${nome}` : ''}!
           </h1>
-          <p className="mt-0.5 text-[1.0625rem] text-muted-foreground">{subtitulo}</p>
+          <p className="mt-0.5 text-[1rem] text-muted-foreground">{subtitulo}</p>
         </div>
         <Button variant="secondary" size="icon" aria-label="Entrar numa lista com código de convite" onClick={() => setFolha('codigo')}>
           <UserRoundPlus className="size-5" />
@@ -126,7 +126,7 @@ export function Listas() {
           <div aria-busy className="h-[19rem] animate-pulso rounded-[1.75rem] bg-muted" />
         ) : isError && !listas ? (
           <div className="pt-8">
-            <p className="text-[1.0625rem] leading-snug">Não deu para carregar suas listas. Confira a conexão.</p>
+            <p className="text-[1rem] leading-snug">Não deu para carregar suas listas. Confira a conexão.</p>
             <Button variant="secondary" className="mt-4" onClick={() => void refetch()}>
               Tentar de novo
             </Button>
@@ -147,13 +147,13 @@ export function Listas() {
         ) : (
           <div className="pt-10">
             <p className="font-display text-[3.5rem] italic leading-[0.92]">Vamos às compras?</p>
-            <p className="mt-4 max-w-[20rem] text-[1.0625rem] leading-snug text-muted-foreground">
+            <p className="mt-4 max-w-[20rem] text-[1rem] leading-snug text-muted-foreground">
               Crie a lista, convide quem compra com você e fotografe as etiquetas no mercado. O total do carrinho aparece nos dois celulares.
             </p>
             <button
               type="button"
               onClick={() => setFolha('codigo')}
-              className="mt-7 flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-primary/70 bg-card/60 px-4 text-left text-[1.0625rem] font-medium text-primary-texto"
+              className="mt-7 flex min-h-12 w-full items-center gap-3 rounded-2xl border border-dashed border-primary/70 bg-card/60 px-4 text-left text-[1rem] font-medium text-primary-texto"
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
                 <Plus aria-hidden className="size-4" strokeWidth={3} />
