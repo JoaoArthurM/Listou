@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import { PROBLEMAS, problemasDaLeitura, textoDoProblema, travaPreco } from './leitura.ts'
 import {
   acaoSchema,
   chatEntradaSchema,
   dadosMensagemSchema,
   extracaoSchema,
   interpretarAcoes,
+  leituraSchema,
   lerEtiquetaEntradaSchema,
-  normalizarExtracao,
-  type Extracao,
+  validarLeitura,
+  type Leitura,
 } from './schemas.ts'
 
 const LISTA = '11111111-1111-4111-8111-111111111111'
@@ -27,15 +29,16 @@ const etiquetaValida = {
   observacao: '',
 }
 
-describe('extracaoSchema (resposta do Gemini em ler-etiqueta)', () => {
+describe('leituraSchema (resposta do Gemini em ler-etiqueta)', () => {
   it('aceita o exemplo da seção 6.1', () => {
-    const lido = extracaoSchema.parse(etiquetaValida)
+    const lido = leituraSchema.parse(etiquetaValida)
     expect(lido.faixas).toHaveLength(3)
     expect(lido.item_sugerido_id).toBe(ITEM)
+    expect(lido.nao_lido).toEqual([])
   })
 
   it('aceita etiqueta simples, sem item sugerido e sem observação', () => {
-    const lido = extracaoSchema.parse({
+    const lido = leituraSchema.parse({
       produto: 'Banana prata',
       unidade: 'kg',
       faixas: [{ tipo: 'varejo', preco_centavos: 599, qtd_minima: 1, cartao: null }],
@@ -45,16 +48,26 @@ describe('extracaoSchema (resposta do Gemini em ler-etiqueta)', () => {
     expect(lido.observacao).toBe('')
   })
 
+  it('aceita nome não lido (null) e a lista do que ficou sem ler', () => {
+    const lido = leituraSchema.parse({ ...etiquetaValida, produto: null, nao_lido: ['produto', 'preco_cartao'] })
+    expect(lido.produto).toBeNull()
+    expect(lido.nao_lido).toEqual(['produto', 'preco_cartao'])
+  })
+
+  it('valor desconhecido em nao_lido continua contando como dúvida', () => {
+    expect(leituraSchema.parse({ ...etiquetaValida, nao_lido: ['codigo_de_barras'] }).nao_lido).toEqual(['outro'])
+  })
+
   it.each(['produto', 'unidade', 'faixas', 'item_sugerido_id', 'confianca'])('rejeita sem o campo %s', (campo) => {
     const incompleta: Record<string, unknown> = { ...etiquetaValida }
     delete incompleta[campo]
-    expect(extracaoSchema.safeParse(incompleta).success).toBe(false)
+    expect(leituraSchema.safeParse(incompleta).success).toBe(false)
   })
 
   it.each(['tipo', 'preco_centavos', 'qtd_minima', 'cartao'])('rejeita faixa sem o campo %s', (campo) => {
     const faixa: Record<string, unknown> = { tipo: 'varejo', preco_centavos: 489, qtd_minima: 1, cartao: null }
     delete faixa[campo]
-    expect(extracaoSchema.safeParse({ ...etiquetaValida, faixas: [faixa] }).success).toBe(false)
+    expect(leituraSchema.safeParse({ ...etiquetaValida, faixas: [faixa] }).success).toBe(false)
   })
 
   const comPreco = (preco: unknown) => ({
@@ -63,87 +76,165 @@ describe('extracaoSchema (resposta do Gemini em ler-etiqueta)', () => {
   })
 
   it('rejeita preço negativo', () => {
-    expect(extracaoSchema.safeParse(comPreco(-489)).success).toBe(false)
+    expect(leituraSchema.safeParse(comPreco(-489)).success).toBe(false)
   })
 
   it('rejeita preço como string', () => {
-    expect(extracaoSchema.safeParse(comPreco('4,89')).success).toBe(false)
-    expect(extracaoSchema.safeParse(comPreco('489')).success).toBe(false)
+    expect(leituraSchema.safeParse(comPreco('4,89')).success).toBe(false)
+    expect(leituraSchema.safeParse(comPreco('489')).success).toBe(false)
   })
 
   it('rejeita preço com casas decimais (tem que ser centavo inteiro)', () => {
-    expect(extracaoSchema.safeParse(comPreco(4.89)).success).toBe(false)
+    expect(leituraSchema.safeParse(comPreco(4.89)).success).toBe(false)
   })
 
   it('rejeita quantidade mínima zero, unidade e confiança desconhecidas', () => {
     const faixa = { tipo: 'atacado', preco_centavos: 469, qtd_minima: 0, cartao: null }
-    expect(extracaoSchema.safeParse({ ...etiquetaValida, faixas: [faixa] }).success).toBe(false)
-    expect(extracaoSchema.safeParse({ ...etiquetaValida, unidade: 'litro' }).success).toBe(false)
-    expect(extracaoSchema.safeParse({ ...etiquetaValida, confianca: 'altíssima' }).success).toBe(false)
-    expect(extracaoSchema.safeParse({ ...etiquetaValida, item_sugerido_id: 'leite' }).success).toBe(false)
+    expect(leituraSchema.safeParse({ ...etiquetaValida, faixas: [faixa] }).success).toBe(false)
+    expect(leituraSchema.safeParse({ ...etiquetaValida, unidade: 'litro' }).success).toBe(false)
+    expect(leituraSchema.safeParse({ ...etiquetaValida, confianca: 'altíssima' }).success).toBe(false)
+    expect(leituraSchema.safeParse({ ...etiquetaValida, item_sugerido_id: 'leite' }).success).toBe(false)
   })
 })
 
-describe('normalizarExtracao', () => {
-  const base = extracaoSchema.parse(etiquetaValida)
+describe('validarLeitura (nada é presumido: o que falta vira problema)', () => {
+  const base = leituraSchema.parse(etiquetaValida)
+  const varejo = { tipo: 'varejo', preco_centavos: 199, qtd_minima: 1, cartao: null } as const
+  const validar = (mudanca: Partial<Leitura>) => validarLeitura({ ...base, ...mudanca }, [ITEM])
+
+  it('leitura completa passa sem problema nenhum', () => {
+    const boa = validar({ observacao: 'reflexo no canto' })
+    expect(boa.problemas).toEqual([])
+    expect(boa.confianca).toBe('alta')
+    expect(boa.produto).toBe('Produto X 400g')
+    expect(boa.observacao).toBe('reflexo no canto')
+    expect(travaPreco(boa.problemas)).toBe(false)
+  })
 
   it('mantém a sugestão só quando o item existe na lista', () => {
-    expect(normalizarExtracao(base, [ITEM]).item_sugerido_id).toBe(ITEM)
-    expect(normalizarExtracao(base, []).item_sugerido_id).toBeNull()
+    expect(validarLeitura(base, [ITEM]).item_sugerido_id).toBe(ITEM)
+    expect(validarLeitura(base, []).item_sugerido_id).toBeNull()
   })
 
   it('normaliza o nome do cartão e remove faixas repetidas', () => {
-    const lida: Extracao = {
-      ...base,
+    const lida = validar({
       faixas: [
-        { tipo: 'varejo', preco_centavos: 199, qtd_minima: 1, cartao: null },
+        varejo,
         { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: 'Vuon  Card' },
         { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: 'vuon card' },
       ],
-    }
-    expect(normalizarExtracao(lida, []).faixas).toEqual([
-      { tipo: 'varejo', preco_centavos: 199, qtd_minima: 1, cartao: null },
-      { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: 'vuon card' },
-    ])
+    })
+    expect(lida.faixas).toEqual([varejo, { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: 'vuon card' }])
+    expect(lida.problemas).toEqual([])
   })
 
-  it('faixa de cartão sem nome não vira preço para todo mundo', () => {
-    const lida: Extracao = {
-      ...base,
-      faixas: [
-        { tipo: 'varejo', preco_centavos: 199, qtd_minima: 1, cartao: null },
-        { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: null },
-      ],
-    }
-    expect(normalizarExtracao(lida, []).faixas[1]?.cartao).toBe('cartao da loja')
+  it.each([null, '', 'Produto não identificado', 'ILEGÍVEL', 'X'])('nome %j não é nome: fica null e vira problema', (produto) => {
+    const lida = validar({ produto })
+    expect(lida.produto).toBeNull()
+    expect(lida.problemas).toEqual(['sem_nome'])
+    // Só o nome faltou: o preço continua valendo.
+    expect(lida.confianca).toBe('alta')
+    expect(travaPreco(lida.problemas)).toBe(false)
   })
 
-  it('varejo ilegível força confiança baixa', () => {
-    const lida: Extracao = {
-      ...base,
-      faixas: [{ tipo: 'atacado', preco_centavos: 469, qtd_minima: 6, cartao: null }],
-    }
-    const normal = normalizarExtracao(lida, [])
-    expect(normal.confianca).toBe('baixa')
-    expect(normal.observacao).not.toBe('')
-    expect(normalizarExtracao({ ...base, faixas: [] }, []).confianca).toBe('baixa')
+  it('nome que o modelo disse não ter lido é descartado, mesmo preenchido', () => {
+    const lida = validar({ produto: 'Arroz Tio Jo', nao_lido: ['produto'] })
+    expect(lida.produto).toBeNull()
+    expect(lida.problemas).toEqual(['sem_nome'])
   })
 
-  it('atacado mais caro que o varejo força confiança baixa', () => {
-    const lida: Extracao = {
-      ...base,
-      faixas: [
-        { tipo: 'varejo', preco_centavos: 469, qtd_minima: 1, cartao: null },
-        { tipo: 'atacado', preco_centavos: 489, qtd_minima: 6, cartao: null },
-      ],
-    }
-    expect(normalizarExtracao(lida, []).confianca).toBe('baixa')
+  it('sem varejo (omitido, zerado ou declarado ilegível) o preço trava', () => {
+    const soAtacado = validar({ faixas: [{ tipo: 'atacado', preco_centavos: 469, qtd_minima: 6, cartao: null }] })
+    expect(soAtacado.problemas).toEqual(['sem_preco'])
+    expect(soAtacado.confianca).toBe('baixa')
+
+    const zerado = validar({ faixas: [{ ...varejo, preco_centavos: 0 }] })
+    expect(zerado.problemas).toEqual(['sem_preco'])
+    expect(zerado.faixas).toEqual([])
+
+    const declarado = validar({ faixas: [varejo], nao_lido: ['preco_varejo'] })
+    expect(declarado.problemas).toEqual(['sem_preco'])
+    expect(travaPreco(declarado.problemas)).toBe(true)
   })
 
-  it('preserva a observação do modelo e a confiança de uma leitura boa', () => {
-    const normal = normalizarExtracao({ ...base, observacao: 'reflexo no canto' }, [ITEM])
-    expect(normal.confianca).toBe('alta')
-    expect(normal.observacao).toBe('reflexo no canto')
+  it('faixa de cartão sem o nome do cartão não entra: vira problema', () => {
+    const lida = validar({ faixas: [varejo, { tipo: 'cartao', preco_centavos: 149, qtd_minima: 1, cartao: null }] })
+    expect(lida.faixas).toEqual([varejo])
+    expect(lida.problemas).toEqual(['cartao_ilegivel'])
+    expect(lida.confianca).toBe('baixa')
+  })
+
+  it('atacado sem quantidade mínima não entra: vira problema', () => {
+    const lida = validar({ faixas: [varejo, { tipo: 'atacado', preco_centavos: 189, qtd_minima: 1, cartao: null }] })
+    expect(lida.faixas).toEqual([varejo])
+    expect(lida.problemas).toEqual(['atacado_ilegivel'])
+  })
+
+  it('o que o modelo declarou não ter lido vira o problema correspondente', () => {
+    expect(validar({ faixas: [varejo], nao_lido: ['preco_atacado'] }).problemas).toEqual(['atacado_ilegivel'])
+    expect(validar({ faixas: [varejo], nao_lido: ['qtd_minima'] }).problemas).toEqual(['atacado_ilegivel'])
+    expect(validar({ faixas: [varejo], nao_lido: ['preco_cartao'] }).problemas).toEqual(['cartao_ilegivel'])
+    expect(validar({ faixas: [varejo], nao_lido: ['nome_cartao'] }).problemas).toEqual(['cartao_ilegivel'])
+    expect(validar({ faixas: [varejo], nao_lido: ['unidade'] }).problemas).toEqual(['unidade_incerta'])
+    expect(validar({ faixas: [varejo], nao_lido: ['outro'] }).problemas).toEqual(['leitura_duvidosa'])
+  })
+
+  it('preços que não batem entre si travam o cálculo', () => {
+    const atacadoMaisCaro = validar({ faixas: [{ ...varejo, preco_centavos: 469 }, { tipo: 'atacado', preco_centavos: 489, qtd_minima: 6, cartao: null }] })
+    expect(atacadoMaisCaro.problemas).toEqual(['precos_incoerentes'])
+    expect(atacadoMaisCaro.confianca).toBe('baixa')
+
+    const doisVarejos = validar({ faixas: [varejo, { ...varejo, preco_centavos: 799 }] })
+    expect(doisVarejos.problemas).toEqual(['precos_incoerentes'])
+  })
+
+  it('confiança baixa sem explicação vira dúvida; média com tudo lido não trava', () => {
+    const baixa = validar({ faixas: [varejo], confianca: 'baixa' })
+    expect(baixa.problemas).toEqual(['leitura_duvidosa'])
+    expect(baixa.confianca).toBe('baixa')
+
+    const media = validar({ faixas: [varejo], confianca: 'media' })
+    expect(media.problemas).toEqual([])
+    expect(media.confianca).toBe('media')
+  })
+
+  it('confiança baixa explicada só pelo nome não põe o preço em dúvida', () => {
+    const lida = validar({ produto: null, faixas: [varejo], confianca: 'baixa', nao_lido: ['produto'] })
+    expect(lida.problemas).toEqual(['sem_nome'])
+    expect(travaPreco(lida.problemas)).toBe(false)
+    expect(lida.faixas).toEqual([varejo])
+  })
+
+  it('foto que não é etiqueta: nenhum dado sai, só o problema', () => {
+    const declarada = validar({ nao_lido: ['etiqueta'] })
+    expect(declarada).toMatchObject({ produto: null, faixas: [], item_sugerido_id: null, problemas: ['sem_etiqueta'] })
+
+    const vazia = validar({ produto: null, faixas: [] })
+    expect(vazia.problemas).toEqual(['sem_etiqueta'])
+  })
+
+  it('junta vários problemas, na ordem fixa', () => {
+    const lida = validar({ produto: null, faixas: [varejo], nao_lido: ['preco_atacado', 'unidade'] })
+    expect(lida.problemas).toEqual(['sem_nome', 'atacado_ilegivel', 'unidade_incerta'])
+    expect(lida.confianca).toBe('baixa')
+  })
+
+  it('o resultado cabe no schema do card', () => {
+    const lida = validar({ produto: null, faixas: [varejo], nao_lido: ['preco_cartao'] })
+    expect(extracaoSchema.parse(lida)).toEqual(lida)
+  })
+
+  it('todo problema tem um texto para a tela', () => {
+    for (const problema of PROBLEMAS) expect(textoDoProblema(problema).length).toBeGreaterThan(10)
+  })
+
+  it('card antigo (sem a lista de problemas) com confiança baixa continua pedindo o preço', () => {
+    expect(problemasDaLeitura({ confianca: 'baixa' })).toEqual(['leitura_duvidosa'])
+    expect(problemasDaLeitura({ confianca: 'alta' })).toEqual([])
+    expect(problemasDaLeitura({ confianca: 'baixa', problemas: ['sem_preco'] })).toEqual(['sem_preco'])
+    // Card novo: vale a lista. Faltar só o nome não vira dúvida no preço.
+    expect(problemasDaLeitura({ confianca: 'baixa', problemas: ['sem_nome'] })).toEqual(['sem_nome'])
+    expect(extracaoSchema.parse(etiquetaValida).problemas).toEqual([])
   })
 })
 

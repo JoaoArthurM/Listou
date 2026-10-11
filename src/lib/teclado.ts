@@ -4,7 +4,7 @@
 // campo fixo no rodapé (o do chat) ficaria escondido atrás dele. O
 // visualViewport diz quanto sobrou de tela; publicamos isso em variáveis CSS
 // e a moldura (src/index.css) se ajusta. No Android o meta
-// interactive-widget=resizes-content já redimensiona, e as variáveis só
+// interactive-widget=resizes-content (index.html) já redimensiona, e as variáveis só
 // acompanham.
 
 const LIMIAR_TECLADO = 140

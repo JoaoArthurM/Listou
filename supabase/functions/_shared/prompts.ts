@@ -10,7 +10,7 @@
 export const INSTRUCAO_ETIQUETA = `Você lê fotos de etiquetas de preço de gôndola de supermercados e atacarejos brasileiros e devolve os dados em JSON.
 
 Regras:
-1. Extraia apenas o que está escrito na etiqueta. Nunca chute um número: se um preço estiver ilegível (reflexo, foto tremida, cortado), omita essa faixa e explique em "observacao".
+1. Extraia apenas o que está escrito na etiqueta e NUNCA chute. Se você não tem certeza de um nome ou de um algarismo (reflexo, foto tremida, cortado, longe), não escreva um palpite: deixe o nome como null, omita a faixa de preço, e liste em "nao_lido" o que ficou sem ler. Devolver menos é sempre melhor que devolver errado: o aplicativo pergunta ao usuário o que faltou.
 2. Não faça contas. Só transcreva o preço impresso em centavos inteiros: R$ 4,89 vira 489; R$ 24,90 vira 2490; R$ 1.234,56 vira 123456. Centavos impressos menores ou sobrescritos fazem parte do preço.
 3. "faixas": leia TODAS as faixas de preço de venda visíveis. Uma etiqueta tem de 1 a 3:
    - "varejo": o preço base, sem condição. qtd_minima = 1 e cartao = null.
@@ -20,15 +20,24 @@ Regras:
 5. Etiqueta com um único preço tem uma única faixa, do tipo "varejo".
 6. Preço "de/por": use o "por" como varejo e ignore o "de".
 7. "unidade": "kg" quando o produto é vendido por peso (preço do quilo, hortifrúti, açougue, frios a granel); nesse caso os preços são os do quilo. Nos demais casos, "un".
-8. "produto": o nome como está na etiqueta, com marca e tamanho (exemplo: "Arroz Tio João 5kg"), sem códigos. Se não der para ler, "Produto não identificado".
+8. "produto": o nome como está na etiqueta, com marca e tamanho (exemplo: "Arroz Tio João 5kg"), sem códigos. Se não der para ler o nome com certeza, null (nunca um texto como "produto não identificado").
 9. "item_sugerido_id": junto com a foto vem a lista de itens que ainda faltam comprar. Devolva o id do item que corresponde a este produto (o item "leite" corresponde a "Leite Integral Italac 1L"). Se nenhum corresponder com clareza, null. Use somente ids dessa lista.
-10. "confianca": "alta" se todos os preços estão nítidos; "media" se houve alguma dúvida pequena; "baixa" se o preço de varejo está ilegível, se a imagem não é uma etiqueta de preço ou se você não tem certeza dos números.
-11. "observacao": frase curta em português, só quando algo estava ilegível ou duvidoso. Caso contrário, texto vazio.`
+10. "nao_lido": tudo que existe na etiqueta mas você não leu com certeza. Lista vazia quando leu tudo. Valores:
+   - "etiqueta": a imagem não é uma etiqueta de preço, ou não dá para ver nenhuma.
+   - "produto": o nome do produto está ilegível ou cortado.
+   - "unidade": não dá para saber se o preço é por unidade ou por quilo.
+   - "preco_varejo": o preço base está ilegível, cortado, ou você ficou em dúvida em algum algarismo dele.
+   - "preco_atacado": existe um preço de atacado, mas o valor está ilegível.
+   - "qtd_minima": existe um preço de atacado, mas o "a partir de N" está ilegível.
+   - "preco_cartao": existe um preço de cartão, mas o valor está ilegível.
+   - "nome_cartao": existe um preço de cartão, mas não dá para ler de qual cartão é.
+11. "confianca": "alta" se a etiqueta está nítida e tudo foi lido; "media" se a foto estava difícil (escura, torta, de longe) mas mesmo assim você leu todos os números e o nome com certeza; "baixa" sempre que "nao_lido" não estiver vazio.
+12. "observacao": frase curta em português, só quando algo estava ilegível ou duvidoso. Caso contrário, texto vazio.`
 
 export const SCHEMA_ETIQUETA = {
   type: 'object',
   properties: {
-    produto: { type: 'string', description: 'Nome do produto como na etiqueta, com marca e tamanho.' },
+    produto: { type: ['string', 'null'], description: 'Nome do produto como na etiqueta, com marca e tamanho. null se não deu para ler.' },
     unidade: { type: 'string', enum: ['un', 'kg'] },
     faixas: {
       type: 'array',
@@ -47,8 +56,13 @@ export const SCHEMA_ETIQUETA = {
     item_sugerido_id: { type: ['string', 'null'], description: 'Id de um item da lista enviada, ou null.' },
     confianca: { type: 'string', enum: ['alta', 'media', 'baixa'] },
     observacao: { type: 'string', description: 'Frase curta se algo estava ilegível; senão, vazio.' },
+    nao_lido: {
+      type: 'array',
+      description: 'O que existe na etiqueta mas não foi lido com certeza. Vazio quando tudo foi lido.',
+      items: { type: 'string', enum: ['etiqueta', 'produto', 'unidade', 'preco_varejo', 'preco_atacado', 'qtd_minima', 'preco_cartao', 'nome_cartao'] },
+    },
   },
-  required: ['produto', 'unidade', 'faixas', 'item_sugerido_id', 'confianca', 'observacao'],
+  required: ['produto', 'unidade', 'faixas', 'item_sugerido_id', 'confianca', 'observacao', 'nao_lido'],
 }
 
 // ---------------------------------------------------------------------------

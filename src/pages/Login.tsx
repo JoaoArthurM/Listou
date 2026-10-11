@@ -2,7 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Moldura } from '@/components/layout/Moldura'
 import { Button } from '@/components/ui/button'
 import { Field, PasswordField } from '@/components/ui/input'
+import { Segmented } from '@/components/ui/segmented'
 import { emailValido, mensagemDeAuth, SENHA_MINIMA } from '@/lib/auth'
+import { calcularTotalCentavos, formatarQuantidade, formatarReais } from '@/lib/dinheiro'
 import { FOTO_PADRAO } from '@/lib/fotos'
 import { supabase } from '@/lib/supabase'
 
@@ -11,21 +13,57 @@ const ESPERA_REENVIO = 60
 /** Entrar com senha, criar conta ou receber um link de acesso por e-mail. */
 type Modo = 'entrar' | 'criar' | 'link'
 
-/** Cartão de demonstração: o que o app faz, com o exemplo de etiqueta da própria especificação. */
+// A conta do cartão de demonstração sai do mesmo código que soma o carrinho.
+const EXEMPLO = { precoDoKg: 499, peso: 0.742 }
+const CONTA = `${formatarQuantidade(EXEMPLO.peso, 'kg')} × ${formatarReais(EXEMPLO.precoDoKg)} = ${formatarReais(calcularTotalCentavos(EXEMPLO.precoDoKg, EXEMPLO.peso))}`
+
+/**
+ * Quem volta de um link de e-mail vencido ou já usado chega com o motivo no
+ * endereço. Sem isto a pessoa cairia no login sem saber por quê.
+ */
+function erroDoLink(): string | null {
+  const dados = new URLSearchParams(window.location.hash.replace(/^#/, '') || window.location.search)
+  if (!dados.get('error') && !dados.get('error_code')) return null
+  return dados.get('error_code') === 'otp_expired'
+    ? 'Esse link venceu ou já foi usado. Entre com a senha ou peça outro link.'
+    : 'Não deu para entrar por esse link. Entre com a senha ou peça outro link.'
+}
+
+/** Cartão de demonstração: o que o app faz, numa etiqueta de produto por peso. */
 function Demonstracao() {
   return (
-    <div aria-hidden className="relative mx-auto mt-9 w-[15rem]">
-      <span className="absolute inset-0 origin-bottom -rotate-[7deg] rounded-[1.5rem] bg-[#8d867c] dark:bg-[#3a3631]" />
-      <span className="absolute inset-0 origin-bottom rotate-[5deg] rounded-[1.5rem] bg-[#57514a] dark:bg-[#2b2824]" />
-      <div className="cartao-foto -rotate-[1.5deg] rounded-[1.5rem] p-4 shadow-flutuante">
+    <div aria-hidden className="abertura-cartao animate-surge [animation-delay:140ms]">
+      <span className="absolute inset-0 origin-bottom -rotate-[7deg] rounded-[1.5rem] bg-[#3a3631]" />
+      <span className="absolute inset-0 origin-bottom rotate-[5deg] rounded-[1.5rem] bg-[#2b2824]" />
+      <div className="cartao-foto -rotate-[1.5deg] rounded-[1.5rem] p-4">
         <img src={FOTO_PADRAO} alt="" decoding="async" />
         <div className="flex gap-2 text-sm">
           <span className="rounded-full bg-white/20 px-3 py-1 backdrop-blur-sm">Etiqueta</span>
-          <span className="dinheiro rounded-full bg-destaque px-3 py-1 font-medium text-destaque-foreground">6+ 4,69</span>
+          <span className="dinheiro rounded-full bg-destaque px-3 py-1 font-medium text-destaque-foreground">
+            {formatarReais(EXEMPLO.precoDoKg)} o kg
+          </span>
         </div>
-        <p className="mt-9 font-display text-[2.375rem] italic leading-none">Café 500 g</p>
-        <p className="dinheiro mt-2 text-[0.9375rem] text-white/85">6 × R$ 4,69 = R$ 28,14</p>
+        <p className="mt-9 font-display text-[2.375rem] italic leading-none">Cenoura</p>
+        <p className="dinheiro mt-2 text-[0.9375rem] text-white/85">{CONTA}</p>
       </div>
+    </div>
+  )
+}
+
+/**
+ * A faixa preta do topo: a marca, a frase e o cartão. O que aparece depende da
+ * altura que sobra acima do formulário (regras em src/index.css): tela cheia
+ * mostra tudo, navegador com barras perde o cartão, teclado aberto fica só com
+ * a marca pequena ou com nada.
+ */
+function Abertura() {
+  return (
+    <div className="abertura">
+      <h1 className="abertura-marca font-display italic leading-[0.85] tracking-[-0.02em]">Listou</h1>
+      <p className="abertura-frase mt-4 max-w-[17rem] text-[1.0625rem] leading-snug text-moldura-muted">
+        A lista de compras a dois que lê a etiqueta e soma o carrinho.
+      </p>
+      <Demonstracao />
     </div>
   )
 }
@@ -34,16 +72,25 @@ function Demonstracao() {
  * Login por e-mail e senha, com criação de conta na mesma tela. O link de
  * acesso por e-mail continua como alternativa e serve também para quem
  * esqueceu a senha: entra pelo link e define outra no Perfil.
+ *
+ * O formulário fica ancorado embaixo e cabe inteiro na tela, com ou sem
+ * teclado: não há área rolável para o navegador sair rolando sozinho ao focar
+ * um campo. Com o teclado aberto, o que não é campo nem botão sai de cena.
  */
 export function Login({ temConvite }: { temConvite: boolean }) {
   const [modo, setModo] = useState<Modo>('entrar')
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
-  const [erro, setErro] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | null>(erroDoLink)
   const [aviso, setAviso] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [espera, setEspera] = useState(0)
+
+  // O motivo já foi lido para a tela: sai do endereço para não reaparecer ao recarregar.
+  useEffect(() => {
+    if (erroDoLink()) window.history.replaceState(window.history.state, '', window.location.pathname)
+  }, [])
 
   useEffect(() => {
     if (espera <= 0) return
@@ -112,28 +159,30 @@ export function Login({ temConvite }: { temConvite: boolean }) {
   }[modo]
 
   return (
-    <Moldura rodape={<p className="py-2 text-center text-[0.9375rem] text-moldura-muted">Suas listas ficam guardadas na sua conta.</p>}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-6 pt-10">
-        <h1 className="font-display text-[5rem] italic leading-[0.85] tracking-[-0.02em]">Listou</h1>
-        <p className="mt-4 max-w-[17rem] text-[1.0625rem] leading-snug text-muted-foreground">
-          A lista de compras a dois que lê a etiqueta e soma o carrinho.
-        </p>
+    <Moldura topo={<Abertura />} className="animate-folha-sobe">
+      <div className="flex min-h-0 flex-col overflow-y-auto overscroll-contain px-5 pb-4 pt-5">
+        {modo === 'link' ? (
+          <div className="[.teclado-aberto_&]:hidden">
+            <h2 className="text-[1.375rem] font-medium tracking-[-0.02em]">Entrar com link</h2>
+            <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
+              Mandamos um link de acesso para o seu e-mail. Serve também se você esqueceu a senha: depois de entrar, defina outra no Perfil.
+            </p>
+          </div>
+        ) : (
+          <Segmented
+            label="Entrar ou criar conta"
+            className="[.teclado-aberto_&]:hidden"
+            value={modo}
+            onChange={trocarModo}
+            options={[
+              { value: 'entrar', label: 'Entrar' },
+              { value: 'criar', label: 'Criar conta' },
+            ]}
+          />
+        )}
 
-        {/* Criar conta tem um campo a mais: o cartão sai para o formulário caber sem rolar. */}
-        {modo === 'criar' ? null : <Demonstracao />}
-
-        <form onSubmit={(e) => void enviar(e)} className="mt-auto space-y-4 pt-9" noValidate>
-          {modo === 'criar' ? <h2 className="text-[1.375rem] font-medium tracking-[-0.02em]">Criar conta</h2> : null}
-          {modo === 'link' ? (
-            <div>
-              <h2 className="text-[1.375rem] font-medium tracking-[-0.02em]">Entrar com link</h2>
-              <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
-                Mandamos um link de acesso para o seu e-mail. Serve também se você esqueceu a senha: depois de entrar, defina outra no Perfil.
-              </p>
-            </div>
-          ) : null}
-
-          {temConvite && modo === 'entrar' && !aviso ? (
+        <form onSubmit={(e) => void enviar(e)} className="mt-4 space-y-3.5 [.teclado-aberto_&]:mt-0" noValidate>
+          {temConvite && !aviso ? (
             <p className="rounded-2xl border border-dica-borda bg-dica px-4 py-3 text-[0.9375rem] leading-snug text-dica-foreground">
               Você recebeu um convite. Entre ou crie sua conta para abrir a lista.
             </p>
@@ -147,9 +196,9 @@ export function Login({ temConvite }: { temConvite: boolean }) {
           {modo === 'criar' ? (
             <Field
               label="Seu nome"
-              hint="Opcional. É como você aparece para quem divide a lista."
               value={nome}
               onChange={(e) => setNome(e.target.value)}
+              placeholder="Como você aparece na lista"
               maxLength={40}
               autoComplete="given-name"
             />
@@ -171,7 +220,7 @@ export function Login({ temConvite }: { temConvite: boolean }) {
               name="senha"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              hint={modo === 'criar' ? `Pelo menos ${SENHA_MINIMA} caracteres.` : undefined}
+              placeholder={modo === 'criar' ? `Pelo menos ${SENHA_MINIMA} caracteres` : undefined}
               autoComplete={modo === 'criar' ? 'new-password' : 'current-password'}
               enterKeyHint="go"
             />
@@ -183,27 +232,16 @@ export function Login({ temConvite }: { temConvite: boolean }) {
             </p>
           ) : null}
 
-          <Button type="submit" size="lg" className="dinheiro w-full" disabled={ocupado || (modo === 'link' && espera > 0)}>
+          <Button type="submit" size="lg" className="dinheiro !mt-[1.125rem] w-full" disabled={ocupado || (modo === 'link' && espera > 0)}>
             {acao}
           </Button>
-
-          <div className="-mx-2 flex flex-wrap items-center justify-between gap-x-2">
-            {modo === 'entrar' ? (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => trocarModo('criar')}>
-                  Criar conta
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => trocarModo('link')}>
-                  Entrar com link por e-mail
-                </Button>
-              </>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => trocarModo('entrar')}>
-                {modo === 'criar' ? 'Já tenho conta' : 'Entrar com senha'}
-              </Button>
-            )}
-          </div>
         </form>
+
+        {modo === 'criar' ? null : (
+          <Button variant="ghost" size="sm" className="mx-auto mt-1.5 [.teclado-aberto_&]:hidden" onClick={() => trocarModo(modo === 'link' ? 'entrar' : 'link')}>
+            {modo === 'link' ? 'Entrar com e-mail e senha' : 'Entrar com link por e-mail'}
+          </Button>
+        )}
       </div>
     </Moldura>
   )

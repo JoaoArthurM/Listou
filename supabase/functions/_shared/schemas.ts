@@ -6,6 +6,7 @@
 // no bundle do app.
 
 import { z } from 'zod'
+import { PROBLEMAS, travaPreco, type Problema } from './leitura.ts'
 import { normalizarCartao, type Faixa } from './precos.ts'
 
 const MAX_CENTAVOS = 99_999_999
@@ -37,31 +38,80 @@ export const faixaSchema = z.object({
   cartao: z.string().trim().min(1).max(60).nullable(),
 })
 
-/** O que o Gemini devolve ao ler a etiqueta (seção 6.1). */
-export const extracaoSchema = z.object({
-  produto: z.string().trim().min(1).max(120),
+// O que o modelo pode declarar que não leu. "outro" recebe qualquer valor fora
+// da lista: dúvida que não sabemos nomear continua sendo dúvida.
+const NAO_LIDO = ['etiqueta', 'produto', 'unidade', 'preco_varejo', 'preco_atacado', 'qtd_minima', 'preco_cartao', 'nome_cartao', 'outro'] as const
+
+/**
+ * O que o Gemini devolve ao ler a etiqueta (seção 6.1). O que ele não leu com
+ * certeza vem como null, como faixa omitida ou listado em "nao_lido".
+ */
+export const leituraSchema = z.object({
+  produto: z.string().trim().max(120).nullable(),
   unidade,
   faixas: z.array(faixaSchema).max(6),
   item_sugerido_id: uuid.nullable(),
   confianca: z.enum(['alta', 'media', 'baixa']),
   observacao: z.string().trim().max(300).default(''),
+  nao_lido: z.array(z.enum(NAO_LIDO).catch('outro')).max(12).default([]),
+})
+
+export type Leitura = z.infer<typeof leituraSchema>
+
+/**
+ * A leitura depois de validada: é o que vai para o card do chat. "problemas"
+ * lista tudo que ficou sem ler; "produto" é null quando o nome não foi lido.
+ * Cards gravados antes desta validação não têm "problemas" (vale lista vazia).
+ */
+export const extracaoSchema = z.object({
+  produto: z.string().trim().min(1).max(120).nullable(),
+  unidade,
+  faixas: z.array(faixaSchema).max(6),
+  item_sugerido_id: uuid.nullable(),
+  confianca: z.enum(['alta', 'media', 'baixa']),
+  observacao: z.string().trim().max(300).default(''),
+  problemas: z.array(z.enum(PROBLEMAS)).default([]),
 })
 
 export type Extracao = z.infer<typeof extracaoSchema>
 
+// Textos que o modelo às vezes põe no lugar de um nome que não leu.
+const NAO_E_NOME = new Set(['produto', 'produto nao identificado', 'nao identificado', 'produto desconhecido', 'desconhecido', 'ilegivel', 'sem nome', 'n/a', 'null'])
+
 /**
- * Regras que não dependem da IA acertar: nome de cartão normalizado, sugestão
- * de item só se o id existir na lista e confiança baixa sempre que o varejo
- * faltar ou os preços parecerem trocados. Com confiança baixa o card pede o
- * preço em vez de calcular.
+ * Confere a leitura sem depender de a IA acertar e sem completar o que falta:
+ * cada coisa não lida (ou lida de um jeito que não fecha) vira um problema, que
+ * o card mostra como erro. Com problema no preço a confiança sai "baixa" e o
+ * app pede o valor em vez de calcular.
  */
-export function normalizarExtracao(extracao: Extracao, idsDaLista: string[]): Extracao {
+export function validarLeitura(leitura: Leitura, idsDaLista: string[]): Extracao {
+  const naoLido = new Set(leitura.nao_lido)
+  const problemas = new Set<Problema>()
+
+  const nome = leitura.produto ?? ''
+  const semNome = nome.length < 2 || NAO_E_NOME.has(normalizarCartao(nome)) || naoLido.has('produto')
+  if (semNome) problemas.add('sem_nome')
+
   const vistos = new Set<string>()
   const faixas: Faixa[] = []
-  for (const f of extracao.faixas) {
-    const cartao = f.cartao ? normalizarCartao(f.cartao) : null
-    // Faixa de cartão sem nome não pode virar preço para todo mundo.
-    const faixa: Faixa = { ...f, cartao: f.tipo === 'cartao' ? cartao || 'cartao da loja' : cartao }
+  for (const f of leitura.faixas) {
+    // Preço zero não é preço lido.
+    if (f.preco_centavos <= 0) {
+      problemas.add(f.tipo === 'varejo' ? 'sem_preco' : f.tipo === 'atacado' ? 'atacado_ilegivel' : 'cartao_ilegivel')
+      continue
+    }
+    const cartao = f.cartao ? normalizarCartao(f.cartao) || null : null
+    // Preço de cartão sem o nome do cartão: não dá para saber de quem ele é.
+    if (f.tipo === 'cartao' && cartao === null) {
+      problemas.add('cartao_ilegivel')
+      continue
+    }
+    // Atacado sem "a partir de N" valeria para qualquer quantidade.
+    if (f.tipo === 'atacado' && f.qtd_minima < 2) {
+      problemas.add('atacado_ilegivel')
+      continue
+    }
+    const faixa: Faixa = { ...f, cartao }
     const chave = `${faixa.tipo}|${faixa.preco_centavos}|${faixa.qtd_minima}|${faixa.cartao}`
     if (!vistos.has(chave)) {
       vistos.add(chave)
@@ -69,29 +119,39 @@ export function normalizarExtracao(extracao: Extracao, idsDaLista: string[]): Ex
     }
   }
 
-  const varejos = faixas.filter((f) => f.tipo === 'varejo').map((f) => f.preco_centavos)
-  const menorVarejo = varejos.length > 0 ? Math.min(...varejos) : null
-  let confianca = extracao.confianca
-  let observacao = extracao.observacao
-
-  if (menorVarejo === null) {
-    confianca = 'baixa'
-    observacao ||= 'Não consegui ler o preço de varejo.'
-  } else if (faixas.some((f) => f.tipo !== 'varejo' && f.preco_centavos > menorVarejo)) {
-    // Atacado ou cartão mais caro que o varejo quase sempre é leitura trocada.
-    confianca = 'baixa'
-    observacao ||= 'Os preços lidos parecem trocados.'
+  const semEtiqueta = naoLido.has('etiqueta') || (semNome && faixas.length === 0)
+  if (semEtiqueta) {
+    return { produto: null, unidade: leitura.unidade, faixas: [], item_sugerido_id: null, confianca: 'baixa', observacao: leitura.observacao, problemas: ['sem_etiqueta'] }
   }
 
+  if (naoLido.has('preco_atacado') || naoLido.has('qtd_minima')) problemas.add('atacado_ilegivel')
+  if (naoLido.has('preco_cartao') || naoLido.has('nome_cartao')) problemas.add('cartao_ilegivel')
+  if (naoLido.has('unidade')) problemas.add('unidade_incerta')
+  if (naoLido.has('outro')) problemas.add('leitura_duvidosa')
+
+  const varejos = [...new Set(faixas.filter((f) => f.tipo === 'varejo').map((f) => f.preco_centavos))]
+  if (varejos.length === 0 || naoLido.has('preco_varejo')) problemas.add('sem_preco')
+  // Dois varejos diferentes: um deles é outra coisa (o preço "de", a referência por litro).
+  if (varejos.length > 1) problemas.add('precos_incoerentes')
+  // Atacado ou cartão mais caro que o varejo quase sempre é leitura trocada.
+  if (varejos.length > 0 && faixas.some((f) => f.tipo !== 'varejo' && f.preco_centavos > Math.min(...varejos))) {
+    problemas.add('precos_incoerentes')
+  }
+
+  // Confiança baixa sem dizer o que ficou sem ler: conta como dúvida no preço.
+  // (Quando o modelo diz o que foi, vale só o que ele disse: faltar o nome não põe o preço em dúvida.)
+  if (leitura.confianca === 'baixa' && naoLido.size === 0 && !travaPreco([...problemas])) problemas.add('leitura_duvidosa')
+
+  const ordenados = PROBLEMAS.filter((p) => problemas.has(p))
   return {
-    ...extracao,
+    produto: semNome ? null : nome,
+    unidade: leitura.unidade,
     faixas,
-    confianca,
-    observacao,
-    item_sugerido_id:
-      extracao.item_sugerido_id && idsDaLista.includes(extracao.item_sugerido_id)
-        ? extracao.item_sugerido_id
-        : null,
+    // Sem o nome lido, a correspondência com um item da lista seria palpite.
+    item_sugerido_id: !semNome && leitura.item_sugerido_id && idsDaLista.includes(leitura.item_sugerido_id) ? leitura.item_sugerido_id : null,
+    confianca: travaPreco(ordenados) ? 'baixa' : leitura.confianca,
+    observacao: leitura.observacao,
+    problemas: ordenados,
   }
 }
 

@@ -13,6 +13,7 @@ import { autenticar, type Contexto } from '../_shared/auth.ts'
 import { formatarQuantidade, formatarReais, type Unidade } from '../_shared/dinheiro.ts'
 import { gerarJson, registrarUso, type ParteDeEntrada, type RespostaGemini } from '../_shared/gemini.ts'
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
+import { problemasDaLeitura, textoDoProblema, travaPreco } from '../_shared/leitura.ts'
 import { calcularCompra, cartoesDesconhecidos, linhaCalculo, nomeCartao, normalizarCartao } from '../_shared/precos.ts'
 import { INSTRUCAO_CHAT, SCHEMA_CHAT } from '../_shared/prompts.ts'
 import {
@@ -60,8 +61,13 @@ async function aplicarQuantidade(
 ): Promise<string> {
   if (!card) return 'Não há etiqueta esperando quantidade. Fotografe a etiqueta primeiro.'
   const { extracao } = card.dados
+  // Leitura com pendência no preço não é calculada por aqui: quem resolve é o
+  // card, onde a pessoa vê o que faltou e informa o valor.
+  const problemas = problemasDaLeitura(extracao)
+  if (travaPreco(problemas)) {
+    return `A leitura dessa etiqueta ficou incompleta. ${problemas.map(textoDoProblema).join(' ')} Confirme o preço no card dela.`
+  }
   if (extracao.unidade === 'un' && !Number.isInteger(qtd)) return 'Esse produto é vendido por unidade: diga um número inteiro.'
-  if (extracao.confianca === 'baixa') return 'Não li bem o preço dessa etiqueta. Informe o preço no card dela.'
 
   const [pendente] = cartoesDesconhecidos(extracao.faixas, lista.cartoes, lista.cartoes_recusados)
   if (pendente) return `Antes, responda no card: vocês têm o cartão ${nomeCartao(pendente)}?`
@@ -82,6 +88,7 @@ async function aplicarQuantidade(
 
   // Grava com o token do usuário: o gatilho do banco carimba "comprado_por" com quem falou.
   const sugerido = itens.find((i) => i.id === extracao.item_sugerido_id && !i.comprado)
+  if (!sugerido && !extracao.produto) return 'Não li o nome do produto dessa etiqueta. Escolha o item ou digite o nome no card dela.'
   let itemId: string
   let nome: string
   if (sugerido) {
@@ -90,14 +97,14 @@ async function aplicarQuantidade(
     itemId = sugerido.id
     nome = sugerido.nome
   } else {
+    nome = extracao.produto as string // conferido acima: sem item sugerido, o nome existe
     const { data, error } = await ctx.doUsuario
       .from('itens')
-      .insert({ lista_id: lista.id, nome: extracao.produto, ...compraDoItem })
+      .insert({ lista_id: lista.id, nome, ...compraDoItem })
       .select('id')
       .single()
     if (error) throw error
     itemId = data.id
-    nome = extracao.produto
   }
 
   const fechado: DadosEtiqueta = {
@@ -273,6 +280,8 @@ Deno.serve(async (req) => {
           }
           const unidade = acao.unidade ?? 'un'
           const qtd = acao.qtd !== undefined && (unidade === 'kg' || Number.isInteger(acao.qtd)) ? acao.qtd : null
+          // Quantidade que não fecha com a unidade não é arredondada nem trocada: fica sem, e avisa.
+          if (acao.qtd !== undefined && qtd === null) avisos.push(`Não entendi a quantidade de “${nome}”: entrou na lista sem quantidade.`)
           novos.push({ lista_id, nome, unidade, qtd_planejada: qtd })
           break
         }
@@ -297,16 +306,22 @@ Deno.serve(async (req) => {
             avisos.push(`“${item.nome}” é vendido por unidade: diga um número inteiro.`)
           } else if (acao.preco_centavos === undefined) {
             // Sem preço não mexe no total: é o mesmo que tocar no círculo do item.
-            paraOCarrinho.push({ item, qtd: acao.qtd ?? item.qtd_planejada })
+            // A quantidade só é gravada se foi dita.
+            paraOCarrinho.push({ item, qtd: acao.qtd ?? null })
           } else {
-            propostas.push({
-              tipo: 'marcar_comprado',
-              item_id: item.id,
-              nome: item.nome,
-              unidade: item.unidade,
-              qtd: acao.qtd ?? item.qtd_planejada ?? 1,
-              preco_centavos: acao.preco_centavos,
-            })
+            // Com preço, a conta precisa de uma quantidade dita ou planejada; não se presume "1".
+            const qtd = acao.qtd ?? item.qtd_planejada
+            if (qtd === null) avisos.push(`Quantos “${item.nome}” você levou? Diga a quantidade junto com o preço.`)
+            else {
+              propostas.push({
+                tipo: 'marcar_comprado',
+                item_id: item.id,
+                nome: item.nome,
+                unidade: item.unidade,
+                qtd,
+                preco_centavos: acao.preco_centavos,
+              })
+            }
           }
           break
         }

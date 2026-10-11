@@ -3,6 +3,9 @@
 // devolve. Não grava no item: quem grava é a etapa de quantidade, no app,
 // depois que o usuário diz quantos levou. Aqui só nascem as duas mensagens do
 // chat (a foto e o card de quantidade), para os dois aparelhos verem.
+//
+// O que a IA não leu nunca é completado aqui: vira um problema no card
+// (leitura.ts), que o app mostra como erro e resolve perguntando ao usuário.
 
 import { encodeBase64 } from '@std/encoding/base64'
 import { autenticar } from '../_shared/auth.ts'
@@ -10,12 +13,13 @@ import { BUCKET_ETIQUETAS } from '../_shared/config.ts'
 import { limparFotosAntigas } from '../_shared/fotos.ts'
 import { gerarJson, registrarUso, type RespostaGemini } from '../_shared/gemini.ts'
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
+import { textoDoProblema } from '../_shared/leitura.ts'
 import { linhaFaixas } from '../_shared/precos.ts'
 import { INSTRUCAO_ETIQUETA, SCHEMA_ETIQUETA } from '../_shared/prompts.ts'
 import {
-  extracaoSchema,
+  leituraSchema,
   lerEtiquetaEntradaSchema,
-  normalizarExtracao,
+  validarLeitura,
   type DadosEtiqueta,
   type DadosFoto,
   type RespostaLerEtiqueta,
@@ -75,12 +79,13 @@ Deno.serve(async (req) => {
     emSegundoPlano(registrarUso(ctx.admin, lista_id, 'ler-etiqueta', resposta))
 
     // 5. Validação. Resposta fora do contrato vira erro tratável, nunca valor inventado.
-    const lida = extracaoSchema.safeParse(resposta.json)
+    const lida = leituraSchema.safeParse(resposta.json)
     if (!lida.success) {
       console.error('ler-etiqueta: resposta fora do schema', JSON.stringify(lida.error.issues))
       return erro('Não consegui entender essa etiqueta. Tente outra foto, mais de perto e sem reflexo.', 422)
     }
-    const extracao = normalizarExtracao(lida.data, (pendentes ?? []).map((i) => i.id))
+    const extracao = validarLeitura(lida.data, (pendentes ?? []).map((i) => i.id))
+    const semEtiqueta = extracao.problemas.includes('sem_etiqueta')
 
     // 6. Mensagens do chat: a foto (do usuário) e o card de quantidade (do assistente).
     const foto: DadosFoto = { tipo: 'foto', foto_path }
@@ -94,17 +99,30 @@ Deno.serve(async (req) => {
     })
     if (erroMensagem) throw erroMensagem
 
+    // Sem etiqueta na foto não há card: só o aviso, logo abaixo da foto.
     const card: DadosEtiqueta = { tipo: 'etiqueta', estado: 'aberto', foto_path, extracao }
-    const precos = extracao.faixas.length > 0 ? linhaFaixas(extracao.faixas) : 'preço ilegível'
+    const precos = extracao.faixas.length > 0 ? linhaFaixas(extracao.faixas) : 'preço não lido'
+    const pendencias = extracao.problemas.map(textoDoProblema).join(' ')
     const { data: mensagem, error: erroCard } = await ctx.admin
       .from('mensagens')
-      .insert({
-        lista_id,
-        papel: 'assistente',
-        tipo: 'confirmacao',
-        conteudo: `Etiqueta lida: ${extracao.produto}. ${precos}. Quantos?`,
-        dados: card,
-      })
+      .insert(
+        semEtiqueta
+          ? {
+              lista_id,
+              papel: 'assistente',
+              tipo: 'texto',
+              conteudo: `${pendencias} Tire outra, de frente, mais de perto e sem reflexo.`,
+            }
+          : {
+              lista_id,
+              papel: 'assistente',
+              tipo: 'confirmacao',
+              conteudo: pendencias
+                ? `Etiqueta lida com pendências: ${extracao.produto ?? 'produto sem nome lido'}. ${precos}. ${pendencias}`
+                : `Etiqueta lida: ${extracao.produto}. ${precos}. Quantos?`,
+              dados: card,
+            },
+      )
       .select('id')
       .single()
     if (erroCard) throw erroCard

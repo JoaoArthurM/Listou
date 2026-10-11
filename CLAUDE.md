@@ -203,6 +203,14 @@ Regras do prompt (baseadas em etiquetas reais de atacarejo):
 - Produto vendido por peso: `unidade = 'kg'` e preços são do kg.
 - Faixa ilegível: omitir a faixa e explicar em `observacao`. **Se o varejo estiver ilegível**, `confianca = 'baixa'`. Nunca chutar número.
 
+**Decisão (out/2026): validação da leitura, nada presumido.** O que a IA não lê com certeza vira erro na tela, nunca valor preenchido:
+- O modelo devolve `produto: null` quando não lê o nome e lista em `nao_lido` o que existe na etiqueta mas ficou sem ler (`etiqueta`, `produto`, `unidade`, `preco_varejo`, `preco_atacado`, `qtd_minima`, `preco_cartao`, `nome_cartao`).
+- `validarLeitura` (`_shared/schemas.ts`) confere a resposta sem confiar nela e sem completar o que falta. O resultado traz `problemas`, com os códigos e textos de `src/lib/leitura.ts`: `sem_etiqueta`, `sem_nome`, `sem_preco`, `atacado_ilegivel`, `cartao_ilegivel`, `unidade_incerta`, `precos_incoerentes`, `leitura_duvidosa`. Também viram problema: preço zero, cartão sem nome, atacado sem quantidade mínima, dois varejos diferentes e atacado ou cartão mais caro que o varejo.
+- `sem_etiqueta` não gera card: a foto fica na conversa com o aviso do assistente.
+- Qualquer problema que não seja só o nome trava o preço: o card mostra o que faltou, não calcula e pede o valor da etiqueta. As faixas que foram lidas aparecem como atalhos, e só entram se a pessoa tocar. O item é gravado como `origem_preco = 'manual'` e sem `faixas_preco`.
+- `sem_nome`: o card pede o nome (ou a escolha de um item da lista) e descarta a sugestão de item.
+- A função `chat` segue a mesma regra: "levei 6" não calcula em cima de leitura incompleta; preço dito sem quantidade dita nem planejada vira pergunta, não "1".
+
 ### 6.4 Regra de escolha da faixa (código, não IA)
 
 Função pura em `src/lib/precos.ts` (e cópia em `supabase/functions/_shared/` se o servidor precisar), com testes:
@@ -293,6 +301,7 @@ type Acao =
 
 1. **Login** (magic link por e-mail via Supabase Auth).
    **Decisão (out/2026):** o login principal passou a ser **e-mail e senha**, com criação de conta na mesma tela. O magic link ficou como alternativa (e como "esqueci a senha": entra pelo link e define outra senha no Perfil). Não há código de 6 dígitos por e-mail.
+   **Layout (out/2026):** marca, frase e cartão de foto sobre o preto (`Moldura` com `topo`, a tela escura da referência) e o formulário numa folha ancorada embaixo. A folha cabe inteira na tela, então não há área rolável; quem cede altura é o topo, em degraus por container query (`src/index.css`): sai o cartão, depois a frase, depois a marca. Com o teclado aberto ficam só os campos e o botão. Quem volta de um link de e-mail vencido vê o motivo.
 2. **Minhas listas**: listas ativas, botão "nova lista", entrar por código de convite.
 3. **Lista** (tela principal), com duas abas:
    - **Chat**: conversa com o assistente, botão de câmera, campo de texto.

@@ -20,7 +20,7 @@ npm run dev               # http://localhost:5173
 | `npm run build` | `tsc --noEmit` e build de produção (com service worker) |
 | `npm run lint` | ESLint |
 | `npm test` | Vitest: dinheiro, faixas de preço e schemas das Edge Functions |
-| `npm run sync:shared` | copia `src/lib/{dinheiro,precos}.ts` para as Edge Functions |
+| `npm run sync:shared` | copia `src/lib/{dinheiro,precos,leitura}.ts` para as Edge Functions |
 | `npm run icones` | regenera os ícones do PWA em `public/` |
 
 ## Supabase
@@ -53,7 +53,7 @@ A chave do Gemini nunca entra no frontend nem no repositório.
 O login é por **e-mail e senha** (entrar e criar conta na mesma tela). O link de acesso por e-mail continua como alternativa e serve de "esqueci a senha": a pessoa entra pelo link e define outra senha no Perfil.
 
 1. **Confirm email** (em *Sign In / Providers > Email*): hoje está **ligado**, então quem cria conta recebe um e-mail e só entra depois de abrir o link. Para a pessoa entrar só com e-mail e senha, sem depender de e-mail nenhum, desligue essa opção. O custo é que o endereço deixa de ser verificado.
-2. **URL Configuration:** em *Site URL*, a URL de produção; em *Redirect URLs*, a de produção e `http://localhost:5173`. Vale para o link de acesso e para o e-mail de confirmação.
+2. **URL Configuration:** em *Site URL*, `https://listou-five.vercel.app`; em *Redirect URLs*, `https://listou-five.vercel.app/**` e `http://localhost:5173/**`. Vale para o link de acesso e para o e-mail de confirmação. **Enquanto o *Site URL* estiver no padrão (`http://localhost:3000`), o link do e-mail de confirmação abre nesse endereço**, porque o Supabase ignora um destino que não está na lista. A conta fica confirmada do mesmo jeito; só o redirecionamento é que cai no lugar errado.
 3. **SMTP:** o envio embutido do Supabase só entrega para e-mails da equipe do projeto e limita a 2 mensagens por hora (a documentação diz que ele não é para produção). Isso afeta o link de acesso e a confirmação de conta. Com *Confirm email* desligado e login por senha, dá para usar sem SMTP próprio; para o link funcionar com qualquer endereço, configure um (Resend, por exemplo).
 
 No app instalado no iPhone, o link do e-mail abre no Safari, que não divide o login com o app. Ali o caminho é a senha.
@@ -66,13 +66,23 @@ Importe o repositório na Vercel (framework Vite, já descrito em `vercel.json`)
 
 - Dinheiro é sempre centavo inteiro; `R$ 1.234,56` só existe na hora de mostrar (`src/lib/dinheiro.ts`).
 - A IA só lê a etiqueta e interpreta pedidos. Quem escolhe a faixa (varejo, atacado, cartão) e multiplica é `src/lib/precos.ts`; quem soma o carrinho é a coluna gerada `total_centavos` e a view `lista_totais`.
-- O servidor usa uma cópia de `dinheiro.ts` e `precos.ts` (`supabase/functions/_shared/`). O teste `src/lib/shared.test.ts` falha se as duas versões divergirem.
+- O servidor usa uma cópia de `dinheiro.ts`, `precos.ts` e `leitura.ts` (`supabase/functions/_shared/`). O teste `src/lib/shared.test.ts` falha se as duas versões divergirem.
 
 ## Offline
 
 Listas, itens e conversa ficam em cache no aparelho (React Query persistido). Sem conexão, adicionar, marcar e editar itens funciona e entra numa fila que é reenviada quando o sinal volta, mesmo depois de fechar o app. Chat, voz e foto de etiqueta precisam de conexão.
 
 O indicador ao lado das abas mostra a conexão medida, não a que o navegador supõe: uma sonda pergunta ao Supabase a cada 20 s se ele responde (`src/lib/conexao.ts`). As barras refletem o tempo de resposta e piscam a cada resposta e a cada dado que chega do outro aparelho. Duas sondas sem resposta viram "Offline", mesmo com Wi-Fi conectado.
+
+## Leitura de etiqueta
+
+O que a IA não lê com certeza aparece como erro, e o app pergunta a quem está com a etiqueta na mão. Nada é completado por palpite:
+
+- **Foto sem etiqueta:** não nasce card, só o aviso para tirar outra.
+- **Nome ilegível:** o card pede o nome do produto ou a escolha de um item da lista.
+- **Preço com qualquer dúvida** (varejo ilegível, atacado ou cartão tapado, preços que não batem, unidade incerta): o card mostra o que faltou, não calcula e pede o preço. O que foi lido vira atalho de um toque.
+
+Os códigos e os textos dos problemas estão em `src/lib/leitura.ts`; quem confere a resposta do Gemini é `validarLeitura`, em `supabase/functions/_shared/schemas.ts`.
 
 ## Fotos de etiqueta
 
@@ -91,6 +101,7 @@ Mudanças em itens, mensagens e na lista chegam pelo Realtime (canal `lista:{id}
 ## Pendências conhecidas
 
 - **Teste com 20 fotos reais de etiqueta** (seção 11 da spec), com taxa de acerto por faixa. Só etiquetas sintéticas foram testadas.
-- **Ajustes de Auth** acima (principalmente desligar *Confirm email* e apontar *Site URL* para a URL da Vercel).
+- **Ajustes de Auth** acima. O *Site URL* ainda está no padrão, e por isso o link de confirmação de e-mail abre em `localhost`; desligar *Confirm email* é opcional.
+- **Teclado no celular.** O login novo foi conferido por emulação (alturas de tela com o teclado aberto, entalhe do iPhone). Falta abrir num aparelho de verdade.
 - **Voz em aparelho físico.** A gravação foi testada no Chrome com microfone simulado. No Safari do iPhone o formato gravado é outro (MP4/AAC) e a conversão para WAV ainda não foi conferida num aparelho de verdade.
 - **Áreas seguras** (entalhe, barra de gestos) só foram conferidas por emulação, não em aparelho físico.
