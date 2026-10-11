@@ -48,6 +48,9 @@ export class ErroDoApp extends Error {
 function falhar(erro: PostgrestError | Error | null, contexto: string): never {
   const codigo = erro && 'code' in erro ? erro.code : undefined
   console.error(contexto, erro)
+  if (erro?.message.includes('lista_finalizada')) {
+    throw new ErroDoApp('Esta compra está finalizada. Reabra a lista para mexer nela.', 'lista_finalizada')
+  }
   throw new ErroDoApp(contexto, codigo)
 }
 

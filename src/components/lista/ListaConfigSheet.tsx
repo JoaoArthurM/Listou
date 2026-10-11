@@ -192,42 +192,48 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
       description={outros.length > 0 ? `Você divide esta lista com ${listarNomes(outros)}.` : 'Por enquanto só você está nesta lista.'}
     >
       <div className="space-y-7">
-        <section aria-labelledby="titulo-convite">
-          <h3 id="titulo-convite" className="text-[1.0625rem] font-medium">
-            Convidar
-          </h3>
-          {codigo ? (
-            <div className="mt-2.5 rounded-cartao bg-card p-4 shadow-cartao">
-              <p className="text-[0.9375rem] text-muted-foreground">Código válido por 7 dias</p>
-              <p className="dinheiro mt-1.5 select-all text-[2rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
-              <Button variant="dark" className="mt-4 w-full" onClick={() => void compartilhar()}>
-                {copiado ? <Check className="size-5" /> : 'share' in navigator ? <Share2 className="size-5" /> : <Copy className="size-5" />}
-                {copiado ? 'Copiado' : 'share' in navigator ? 'Compartilhar convite' : 'Copiar convite'}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
-                Quem entrar vê e edita a lista junto com você, em tempo real.
-              </p>
-              <Button variant="secondary" className="mt-3 w-full" disabled={criarConvite.isPending} onClick={gerarConvite}>
-                Gerar código de convite
-              </Button>
-            </>
-          )}
-        </section>
+        {finalizada ? (
+          <p className="rounded-cartao bg-card p-4 text-[0.9375rem] leading-snug text-muted-foreground shadow-cartao">
+            Esta compra está finalizada: não dá para convidar ninguém nem alterar dados. Reabra a lista para mexer nela.
+          </p>
+        ) : (
+          <section aria-labelledby="titulo-convite">
+            <h3 id="titulo-convite" className="text-[1.0625rem] font-medium">
+              Convidar
+            </h3>
+            {codigo ? (
+              <div className="mt-2.5 rounded-cartao bg-card p-4 shadow-cartao">
+                <p className="text-[0.9375rem] text-muted-foreground">Código válido por 7 dias</p>
+                <p className="dinheiro mt-1.5 select-all text-[2rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
+                <Button variant="dark" className="mt-4 w-full" onClick={() => void compartilhar()}>
+                  {copiado ? <Check className="size-5" /> : 'share' in navigator ? <Share2 className="size-5" /> : <Copy className="size-5" />}
+                  {copiado ? 'Copiado' : 'share' in navigator ? 'Compartilhar convite' : 'Copiar convite'}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
+                  Quem entrar vê e edita a lista junto com você, em tempo real.
+                </p>
+                <Button variant="secondary" className="mt-3 w-full" disabled={criarConvite.isPending} onClick={gerarConvite}>
+                  Gerar código de convite
+                </Button>
+              </>
+            )}
+          </section>
+        )}
 
-        <form onSubmit={salvar} className="space-y-4" noValidate>
+        <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
           <h3 className="text-[1.0625rem] font-medium">Dados da lista</h3>
-          <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
-          <Field label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
-          <Field label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
+          <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
+          <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
+          <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
           {erro ? (
             <p role="alert" className="text-sm text-destructive">
               {erro}
             </p>
           ) : null}
-          <Button type="submit" variant="secondary" className="w-full" disabled={atualizar.isPending}>
+          <Button type="submit" variant="secondary" className="w-full" disabled={atualizar.isPending || finalizada}>
             Salvar dados
           </Button>
         </form>
@@ -248,6 +254,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                     variant={cartao.tem ? 'dark' : 'secondary'}
                     size="sm"
                     aria-pressed={cartao.tem}
+                    disabled={finalizada}
                     onClick={() => responderCartao.mutate({ cartao: cartao.nome, tem: !cartao.tem })}
                   >
                     {cartao.tem ? 'Temos' : 'Não temos'}
