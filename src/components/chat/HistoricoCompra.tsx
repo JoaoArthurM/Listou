@@ -2,6 +2,7 @@ import { Camera, Check } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { useUsuario } from '@/hooks/sessao'
 import { useMembros } from '@/hooks/useListas'
+import { useColadoNoFim } from '@/hooks/useColadoNoFim'
 import { useMensagens } from '@/hooks/useMensagens'
 import { chaveDoDia } from '@/lib/datas'
 import { linhaCalculo } from '@/lib/precos'
@@ -90,8 +91,11 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
     return grupos
   }, [mensagens, membros, usuario.id])
 
+  const { rolagem, conteudo, aoRolar } = useColadoNoFim(dias.length + ':' + (mensagens?.length ?? 0))
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
+    <div ref={rolagem} onScroll={aoRolar} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
+      <div ref={conteudo}>
       {isPending ? (
         <div aria-busy className="space-y-3">
           <div className="h-16 esqueleto rounded-cartao" />
@@ -129,6 +133,7 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

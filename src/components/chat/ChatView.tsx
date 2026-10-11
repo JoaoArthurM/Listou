@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowUp, ArrowUpRight, Clock, Mic, RotateCcw } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
 import { useConexao } from '@/hooks/useConexao'
 import { useMembros } from '@/hooks/useListas'
 import { useMensagens } from '@/hooks/useMensagens'
+import { useColadoNoFim } from '@/hooks/useColadoNoFim'
 import { useFrase } from '@/hooks/useFrase'
 import type { AoVivo } from '@/hooks/useRealtime'
 import { chaves, enviarAoChat, enviarVozAoChat } from '@/lib/api'
@@ -49,7 +50,6 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const [texto, setTexto] = useState('')
   const [pendentes, setPendentes] = useState<Pendente[]>([])
   const [gravacao, setGravacao] = useState<Gravacao | null>(null)
-  const rolagem = useRef<HTMLDivElement>(null)
   // Mensagens que já estavam na conversa ao abrir não animam; só as que chegam depois.
   const iniciais = useRef<Set<string> | null>(null)
   const pausa = useRef<number>()
@@ -80,11 +80,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const total = (mensagens?.length ?? 0) + visiveis.length + fotos.length
   if (iniciais.current === null && mensagens) iniciais.current = new Set(mensagens.map((m) => m.id))
 
-  // A conversa abre e acompanha no fim, como qualquer chat.
-  useLayoutEffect(() => {
-    const el = rolagem.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [total, esperandoIA, digitando.length, outrosEsperando.length])
+  // A conversa abre no fim e acompanha: mensagem nova, "digitando" e fotos que terminam de carregar.
+  const { rolagem, conteudo, aoRolar, irParaOFim } = useColadoNoFim(`${total}|${esperandoIA}|${digitando.length}|${outrosEsperando.length}`)
 
   // Os outros aparelhos ficam sabendo que há um pedido meu com a IA.
   useEffect(() => {
@@ -130,6 +127,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   function enfileirar(pendente: Pendente) {
     // Pedido enviado (texto, voz ou atalho): a conversa precisa de tela, não de teclado.
     fecharTeclado()
+    irParaOFim()
     setPendentes((atuais) => [...atuais, pendente])
     void mandar(pendente)
   }
@@ -188,7 +186,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
 
   return (
     <>
-      <div ref={rolagem} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
+      <div ref={rolagem} onScroll={aoRolar} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
+        <div ref={conteudo}>
         {isPending ? (
           <div aria-busy className="space-y-3">
             <div className="h-12 w-2/3 esqueleto rounded-3xl" />
@@ -357,6 +356,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             ))}
           </div>
         ) : null}
+        </div>
       </div>
 
       {somenteLeitura ? null : (
@@ -380,6 +380,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
               <CameraButton
                 aoFotografar={(arquivo) => {
                   fecharTeclado()
+                  irParaOFim()
                   void fotografarEtiqueta(lista.id, usuario.id, arquivo)
                 }}
               />
