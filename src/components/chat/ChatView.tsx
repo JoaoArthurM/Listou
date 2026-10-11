@@ -29,7 +29,7 @@ type Pendente =
   | { id: string; tipo: 'voz'; audio: string; erro: string | null; antes: string[] }
 
 const SEM_CONEXAO = 'Sem conexão. Tente de novo quando o sinal voltar.'
-const SUGESTOES = ['O que falta?', 'Quanto já deu?']
+const SUGESTOES = ['O que falta?', 'O que já peguei?', 'Quanto já deu?']
 const PAUSA_DE_DIGITACAO_MS = 2500
 
 const mensagemDoErro = (erro: unknown, padrao: string) => (erro instanceof Error && erro.message ? erro.message : padrao)
