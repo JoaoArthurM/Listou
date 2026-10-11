@@ -1,7 +1,8 @@
-import { LogOut, Monitor, Moon, Sun } from 'lucide-react'
+import { KeyRound, LogOut, Monitor, Moon, Palette, Sun, UserRound } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Moldura } from '@/components/layout/Moldura'
 import { NavInferior } from '@/components/layout/NavInferior'
+import { Secao } from '@/components/layout/Secao'
 import { StatusConexao } from '@/components/layout/StatusConexao'
 import { Button } from '@/components/ui/button'
 import { Field, PasswordField } from '@/components/ui/input'
@@ -74,43 +75,43 @@ export function Perfil() {
         <StatusConexao className="mt-1" />
       </header>
 
-      <div className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain px-5 pb-8 pt-7">
-        <form onSubmit={salvar} className="space-y-3" noValidate>
-          <Field
-            label="Seu nome"
-            hint="É como você aparece para quem divide a lista."
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            error={erro}
-            maxLength={40}
-            autoComplete="given-name"
-          />
-          <Button type="submit" variant="secondary" disabled={salvarNome.isPending || nome.trim() === (perfil?.nome ?? '')}>
-            Salvar nome
-          </Button>
-        </form>
+      <div className="min-h-0 flex-1 space-y-7 overflow-y-auto overscroll-contain px-5 pb-8 pt-6">
+        <Secao id="titulo-nome" icone={UserRound} titulo="Seu nome" descricao="É como você aparece para quem divide a lista.">
+          <form onSubmit={salvar} className="space-y-3" noValidate>
+            <Field
+              label="Nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              error={erro}
+              maxLength={40}
+              autoComplete="given-name"
+            />
+            <Button type="submit" variant="secondary" className="w-full" disabled={salvarNome.isPending || nome.trim() === (perfil?.nome ?? '')}>
+              Salvar nome
+            </Button>
+          </form>
+        </Secao>
 
-        <form onSubmit={(e) => void salvarSenha(e)} className="space-y-3" noValidate>
-          {/* Campo de usuário escondido: ajuda o gerenciador de senhas a ligar a senha nova à conta certa. */}
-          <input type="email" name="email" value={usuario.email ?? ''} autoComplete="username" readOnly hidden />
-          <PasswordField
-            label="Nova senha"
-            name="nova-senha"
-            hint={`Pelo menos ${SENHA_MINIMA} caracteres. Serve para criar a primeira senha ou trocar a atual.`}
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            error={erroSenha}
-            autoComplete="new-password"
-          />
-          <Button type="submit" variant="secondary" disabled={salvandoSenha || senha === ''}>
-            {salvandoSenha ? 'Salvando…' : 'Salvar senha'}
-          </Button>
-        </form>
+        <Secao id="titulo-senha" icone={KeyRound} titulo="Senha" descricao="Serve para criar a primeira senha ou trocar a atual.">
+          <form onSubmit={(e) => void salvarSenha(e)} className="space-y-3" noValidate>
+            {/* Campo de usuário escondido: ajuda o gerenciador de senhas a ligar a senha nova à conta certa. */}
+            <input type="email" name="email" value={usuario.email ?? ''} autoComplete="username" readOnly hidden />
+            <PasswordField
+              label="Nova senha"
+              name="nova-senha"
+              hint={`Pelo menos ${SENHA_MINIMA} caracteres.`}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              error={erroSenha}
+              autoComplete="new-password"
+            />
+            <Button type="submit" variant="secondary" className="w-full" disabled={salvandoSenha || senha === ''}>
+              {salvandoSenha ? 'Salvando…' : 'Salvar senha'}
+            </Button>
+          </form>
+        </Secao>
 
-        <section aria-labelledby="titulo-aparencia">
-          <h2 id="titulo-aparencia" className="mb-2.5 text-[1rem] font-medium">
-            Aparência
-          </h2>
+        <Secao id="titulo-aparencia" icone={Palette} titulo="Aparência" descricao="Claro, escuro ou o mesmo do seu aparelho.">
           <Segmented<Tema>
             label="Aparência"
             value={tema}
@@ -121,19 +122,16 @@ export function Perfil() {
               { value: 'sistema', label: <><Monitor aria-hidden className="size-4" /> Sistema</> },
             ]}
           />
-        </section>
+        </Secao>
 
-        <section aria-labelledby="titulo-conta">
-          <h2 id="titulo-conta" className="mb-2.5 text-[1rem] font-medium">
-            Conta
-          </h2>
-          <Button variant="secondary" disabled={saindo} onClick={() => void sair()}>
+        <section aria-label="Conta" className="border-t border-dashed border-controle/60 pt-5">
+          <p className="px-1 text-sm leading-snug text-muted-foreground">
+            Ao sair, as listas guardadas neste aparelho para uso offline são apagadas daqui. Elas continuam na sua conta.
+          </p>
+          <Button variant="secondary" className="mt-3 w-full" disabled={saindo} onClick={() => void sair()}>
             <LogOut className="size-5" />
             {saindo ? 'Saindo…' : 'Sair da conta'}
           </Button>
-          <p className="mt-3 text-sm leading-snug text-muted-foreground">
-            Ao sair, as listas guardadas neste aparelho para uso offline são apagadas daqui. Elas continuam na sua conta.
-          </p>
         </section>
       </div>
     </Moldura>

@@ -1,6 +1,7 @@
-import { Check, ClipboardList, Copy, CreditCard, Flag, Share2, UserPlus, type LucideIcon } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Check, ClipboardList, Copy, CreditCard, Flag, Share2, UserPlus } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Dica } from '@/components/layout/Dica'
+import { Secao } from '@/components/layout/Secao'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
@@ -29,22 +30,6 @@ type ListaConfigSheetProps = { lista: Lista; itens: Item[]; aoFechar: () => void
 function algunsNomes(nomes: string[]): string {
   if (nomes.length <= 4) return listarNomes(nomes)
   return `${nomes.slice(0, 3).join(', ')} e mais ${nomes.length - 3}`
-}
-
-type SecaoProps = { id: string; icone: LucideIcon; titulo: string; descricao?: string; semPadding?: boolean; children: ReactNode }
-
-/** Bloco da folha: título com ícone, uma frase de apoio e o conteúdo num cartão próprio. */
-function Secao({ id, icone: Icone, titulo, descricao, semPadding, children }: SecaoProps) {
-  return (
-    <section aria-labelledby={id}>
-      <h3 id={id} className="flex items-center gap-2.5 px-1 text-[1.0625rem] font-medium text-verde">
-        <Icone aria-hidden className="size-5 shrink-0" strokeWidth={1.7} />
-        {titulo}
-      </h3>
-      {descricao ? <p className="mt-1 px-1 text-[0.875rem] leading-snug text-muted-foreground">{descricao}</p> : null}
-      <div className={`mt-3 rounded-cartao bg-card shadow-cartao [&_input]:bg-background ${semPadding ? '' : 'p-4'}`}>{children}</div>
-    </section>
-  )
 }
 
 const mensagem = (erro: unknown) => (erro instanceof Error ? erro.message : 'Algo deu errado. Tente de novo.')
