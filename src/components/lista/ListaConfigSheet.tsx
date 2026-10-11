@@ -1,5 +1,5 @@
-import { Check, Copy, Share2 } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Check, ClipboardList, Copy, CreditCard, Flag, Share2, UserPlus, type LucideIcon } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
@@ -29,6 +29,22 @@ type ListaConfigSheetProps = { lista: Lista; itens: Item[]; aoFechar: () => void
 function algunsNomes(nomes: string[]): string {
   if (nomes.length <= 4) return listarNomes(nomes)
   return `${nomes.slice(0, 3).join(', ')} e mais ${nomes.length - 3}`
+}
+
+type SecaoProps = { id: string; icone: LucideIcon; titulo: string; descricao?: string; semPadding?: boolean; children: ReactNode }
+
+/** Bloco da folha: título com ícone, uma frase de apoio e o conteúdo num cartão próprio. */
+function Secao({ id, icone: Icone, titulo, descricao, semPadding, children }: SecaoProps) {
+  return (
+    <section aria-labelledby={id}>
+      <h3 id={id} className="flex items-center gap-2.5 px-1 text-[1.0625rem] font-medium text-verde">
+        <Icone aria-hidden className="size-5 shrink-0" strokeWidth={1.7} />
+        {titulo}
+      </h3>
+      {descricao ? <p className="mt-1 px-1 text-[0.875rem] leading-snug text-muted-foreground">{descricao}</p> : null}
+      <div className={`mt-3 rounded-cartao bg-card shadow-cartao [&_input]:bg-background ${semPadding ? '' : 'p-4'}`}>{children}</div>
+    </section>
+  )
 }
 
 const mensagem = (erro: unknown) => (erro instanceof Error ? erro.message : 'Algo deu errado. Tente de novo.')
@@ -209,26 +225,22 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
             Esta compra está finalizada: não dá para convidar ninguém nem alterar dados. Reabra a lista para mexer nela.
           </p>
         ) : (
-          <section aria-labelledby="titulo-convite">
-            <h3 id="titulo-convite" className="text-[1rem] font-medium">
-              Convidar
-            </h3>
+          <Secao id="titulo-convite" icone={UserPlus} titulo="Convidar" descricao="Quem tiver o código, ou ler o QR code, entra na lista.">
             {codigo ? (
-              <div className="mt-2.5 rounded-cartao bg-card p-4 shadow-cartao">
-                <p className="text-[0.875rem] text-muted-foreground">Código válido por 7 dias</p>
-                <p className="dinheiro mt-1.5 select-all text-[2rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
-                <div className="mt-4">
-                  <QrCodigo conteudo={linkDoConvite(codigo)} rotulo={`QR code do convite ${codigo}`} />
-                  <p className="mt-2 text-center text-[0.875rem] text-muted-foreground">Ou peça para ler este QR code no outro celular</p>
-                </div>
+              <>
+                <p className="text-[0.8125rem] text-muted-foreground">Código · válido por 7 dias</p>
+                <p className="dinheiro mt-1 select-all text-[1.75rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
+                <hr aria-hidden className="my-4 border-0 border-t border-dashed border-controle/60" />
+                <QrCodigo conteudo={linkDoConvite(codigo)} rotulo={`QR code do convite ${codigo}`} />
+                <p className="mt-2 text-center text-[0.8125rem] text-muted-foreground">Ou peça para ler este QR code no outro celular</p>
                 <Button variant="dark" className="mt-4 w-full" onClick={() => void compartilhar()}>
                   {copiado ? <Check className="size-5" /> : 'share' in navigator ? <Share2 className="size-5" /> : <Copy className="size-5" />}
                   {copiado ? 'Copiado' : 'share' in navigator ? 'Compartilhar convite' : 'Copiar convite'}
                 </Button>
-              </div>
+              </>
             ) : criarConvite.isError ? (
               <>
-                <p role="alert" className="mt-1 text-[0.875rem] leading-snug text-destructive">
+                <p role="alert" className="text-[0.875rem] leading-snug text-destructive">
                   {mensagem(criarConvite.error)}
                 </p>
                 <Button variant="secondary" className="mt-3 w-full" onClick={buscarConvite}>
@@ -236,37 +248,32 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                 </Button>
               </>
             ) : (
-              <div aria-busy className="mt-2.5 h-32 animate-pulso rounded-cartao bg-muted" />
+              <div aria-busy className="h-32 animate-pulso rounded-2xl bg-muted" />
             )}
-          </section>
+          </Secao>
         )}
 
-        <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
-          <h3 className="text-[1rem] font-medium">Dados da lista</h3>
-          <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
-          <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
-          <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
-          {erro ? (
-            <p role="alert" className="text-sm text-destructive">
-              {erro}
-            </p>
-          ) : null}
-          <Button type="submit" variant="secondary" className="w-full" disabled={atualizar.isPending || finalizada}>
-            Salvar dados
-          </Button>
-        </form>
+        <Secao id="titulo-dados" icone={ClipboardList} titulo="Dados da lista">
+          <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
+            <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
+            <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
+            <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
+            {erro ? (
+              <p role="alert" className="text-sm text-destructive">
+                {erro}
+              </p>
+            ) : null}
+            <Button type="submit" variant="secondary" className="w-full" disabled={atualizar.isPending || finalizada}>
+              Salvar dados
+            </Button>
+          </form>
+        </Secao>
 
         {cartoes.length > 0 ? (
-          <section aria-labelledby="titulo-cartoes">
-            <h3 id="titulo-cartoes" className="text-[1rem] font-medium">
-              Cartões da loja
-            </h3>
-            <p className="mt-1 text-[0.875rem] leading-snug text-muted-foreground">
-              O preço de cartão só entra na conta para os cartões que vocês têm.
-            </p>
-            <ul className="mt-2.5 rounded-cartao bg-card shadow-cartao">
+          <Secao id="titulo-cartoes" icone={CreditCard} titulo="Cartões da loja" descricao="O preço de cartão só entra na conta para os cartões que vocês têm." semPadding>
+            <ul>
               {cartoes.map((cartao) => (
-                <li key={cartao.nome} className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4 last:border-b-0">
+                <li key={cartao.nome} className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 last:border-b-0">
                   <span className="min-w-0 truncate text-[1rem]">{nomeCartao(cartao.nome)}</span>
                   <Button
                     variant={cartao.tem ? 'dark' : 'secondary'}
@@ -280,14 +287,35 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                 </li>
               ))}
             </ul>
-          </section>
+          </Secao>
         ) : null}
 
-        <section className="space-y-3 pb-1">
+        <Secao
+          id="titulo-compra"
+          icone={Flag}
+          titulo={finalizada ? 'Compra finalizada' : 'Fechar a compra'}
+          descricao={finalizada ? 'Reabrir devolve a lista ao chat e ao checklist.' : 'Mostra o resumo e guarda o recibo no Histórico.'}
+        >
           <Button className="w-full" disabled={atualizar.isPending} onClick={finalizada ? mudarStatus : () => setResumindo(true)}>
             {finalizada ? 'Reabrir lista' : 'Finalizar compra'}
           </Button>
-          <Button variant={confirmarSaida ? 'destructive' : 'ghost'} className={confirmarSaida ? 'w-full' : 'w-full text-destructive'} onClick={sairOuExcluir}>
+        </Secao>
+
+        <section aria-label="Zona de risco" className="border-t border-dashed border-controle/60 pb-1 pt-5">
+          <p className="px-1 text-[0.875rem] leading-snug text-muted-foreground">
+            {confirmarSaida
+              ? souDono
+                ? 'A lista, os itens e o chat somem para todo mundo. Não dá para desfazer.'
+                : 'Você deixa de ver esta lista. Quem divide com você continua nela.'
+              : souDono
+                ? 'Excluir apaga a lista para todo mundo.'
+                : 'Sair tira a lista da sua conta; a outra pessoa continua nela.'}
+          </p>
+          <Button
+            variant={confirmarSaida ? 'destructive' : 'secondary'}
+            className={confirmarSaida ? 'mt-3 w-full' : 'mt-3 w-full text-destructive'}
+            onClick={sairOuExcluir}
+          >
             {confirmarSaida
               ? souDono
                 ? 'Excluir para todo mundo'
