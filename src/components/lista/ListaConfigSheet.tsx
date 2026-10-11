@@ -1,5 +1,5 @@
 import { Check, Copy, Share2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
@@ -74,9 +74,19 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
     )
   }
 
-  function gerarConvite() {
-    criarConvite.mutate(lista.id, { onSuccess: setCodigo, onError: (e) => avisar(mensagem(e), 'erro') })
+  // O servidor devolve o código que já vale para a lista (o mesmo com que
+  // alguém entrou) e só cria um quando não há nenhum. Por isso o código aparece
+  // ao abrir, sem a pessoa precisar "gerar".
+  const buscou = useRef(false)
+  function buscarConvite() {
+    criarConvite.mutate(lista.id, { onSuccess: setCodigo })
   }
+  useEffect(() => {
+    if (buscou.current || finalizada) return
+    buscou.current = true
+    buscarConvite()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalizada])
 
   async function compartilhar() {
     if (!codigo) return
@@ -216,15 +226,17 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                   {copiado ? 'Copiado' : 'share' in navigator ? 'Compartilhar convite' : 'Copiar convite'}
                 </Button>
               </div>
-            ) : (
+            ) : criarConvite.isError ? (
               <>
-                <p className="mt-1 text-[0.9375rem] leading-snug text-muted-foreground">
-                  Quem entrar vê e edita a lista junto com você, em tempo real.
+                <p role="alert" className="mt-1 text-[0.9375rem] leading-snug text-destructive">
+                  {mensagem(criarConvite.error)}
                 </p>
-                <Button variant="secondary" className="mt-3 w-full" disabled={criarConvite.isPending} onClick={gerarConvite}>
-                  Gerar código de convite
+                <Button variant="secondary" className="mt-3 w-full" onClick={buscarConvite}>
+                  Tentar de novo
                 </Button>
               </>
+            ) : (
+              <div aria-busy className="mt-2.5 h-32 animate-pulso rounded-cartao bg-muted" />
             )}
           </section>
         )}
