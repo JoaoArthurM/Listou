@@ -1,11 +1,12 @@
 import { ArrowLeft, Ellipsis } from 'lucide-react'
 import { useState } from 'react'
 import { ChatView } from '@/components/chat/ChatView'
-import { Dica } from '@/components/layout/Dica'
+import { HistoricoCompra } from '@/components/chat/HistoricoCompra'
 import { Moldura } from '@/components/layout/Moldura'
 import { StatusConexao } from '@/components/layout/StatusConexao'
 import { ItensView } from '@/components/lista/ItensView'
 import { ListaConfigSheet } from '@/components/lista/ListaConfigSheet'
+import { Recibo } from '@/components/lista/Recibo'
 import { TotalBar } from '@/components/lista/TotalBar'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/segmented'
@@ -14,15 +15,11 @@ import { useItens, usePrecosAnteriores } from '@/hooks/useItens'
 import { useLista, usePerfil } from '@/hooks/useListas'
 import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
-import { formatarReais } from '@/lib/dinheiro'
 import { preverFaltantes } from '@/lib/previsao'
-import { resumirCompra } from '@/lib/resumo'
 import { navegar, voltar } from '@/lib/rota'
 import { plural } from '@/lib/utils'
 
 type ListaPaginaProps = { id: string; aba: 'chat' | 'itens' }
-
-const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' })
 
 /** Tela principal: a lista com as abas Chat e Lista e o total do carrinho no rodapé (seção 7.1). */
 export function ListaPagina({ id, aba }: ListaPaginaProps) {
@@ -68,7 +65,6 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const finalizada = lista.status === 'finalizada'
   // Carrinho mais o que falta, pelo preço da última compra de cada item.
   const previsao = preverFaltantes(itens, precos)
-  const economia = finalizada ? resumirCompra(itens).economia.total : 0
   const subtitulo = [
     `${resumo.itens_comprados} de ${plural(resumo.itens_total, 'item', 'itens')}`,
     lista.mercado,
@@ -107,42 +103,46 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
             className="flex-1"
             value={aba}
             onChange={(nova) => navegar(nova === 'itens' ? `/lista/${id}?aba=itens` : `/lista/${id}`, { substituir: true })}
-            options={[
-              { value: 'chat', label: 'Chat' },
-              {
-                value: 'itens',
-                label: (
-                  <>
-                    Lista
-                    {faltando > 0 ? (
-                      <span className="dinheiro grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
-                        <span className="sr-only">, faltam </span>
-                        {faltando}
-                      </span>
-                    ) : null}
-                  </>
-                ),
-              },
-            ]}
+            options={
+              finalizada
+                ? [
+                    { value: 'itens', label: 'Recibo' },
+                    { value: 'chat', label: 'Histórico' },
+                  ]
+                : [
+                    { value: 'chat', label: 'Chat' },
+                    {
+                      value: 'itens',
+                      label: (
+                        <>
+                          Lista
+                          {faltando > 0 ? (
+                            <span className="dinheiro grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                              <span className="sr-only">, faltam </span>
+                              {faltando}
+                            </span>
+                          ) : null}
+                        </>
+                      ),
+                    },
+                  ]
+            }
           />
           <StatusConexao canal={aoVivo.canal} />
         </div>
       </header>
 
-      {finalizada ? (
-        <div className="shrink-0 px-4 pt-3">
-          <Dica>
-            Compra finalizada{lista.finalizada_em ? ` em ${dataCurta.format(new Date(lista.finalizada_em))}` : ''}.
-            {economia > 0 ? ` Atacado e cartão economizaram ${formatarReais(economia)}.` : ''} Para mexer nela de novo, reabra nas opções.
-          </Dica>
-        </div>
-      ) : null}
-
       <div className="flex min-h-0 flex-1 flex-col pt-3">
-        {aba === 'chat' ? (
-          <ChatView lista={lista} itens={itens} aoVivo={aoVivo} somenteLeitura={finalizada} />
+        {finalizada ? (
+          aba === 'chat' ? (
+            <HistoricoCompra lista={lista} />
+          ) : (
+            <Recibo lista={lista} itens={itens} carregando={carregandoItens} />
+          )
+        ) : aba === 'chat' ? (
+          <ChatView lista={lista} itens={itens} aoVivo={aoVivo} somenteLeitura={false} />
         ) : (
-          <ItensView lista={lista} itens={itens} resumo={resumo} precos={precos} carregando={carregandoItens} somenteLeitura={finalizada} />
+          <ItensView lista={lista} itens={itens} resumo={resumo} precos={precos} carregando={carregandoItens} somenteLeitura={false} />
         )}
       </div>
 
