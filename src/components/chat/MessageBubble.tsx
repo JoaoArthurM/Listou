@@ -124,9 +124,20 @@ export function MessageBubble({ mensagem, lista, itens, minha, autor, somenteLei
 
   if (dados?.tipo === 'proposta') {
     return (
-      <div className="space-y-2">
-        {mensagem.conteudo ? <Balao lado="assistente">{mensagem.conteudo}</Balao> : null}
-        <PropostaCard mensagemId={mensagem.id} dados={dados} listaId={lista.id} itens={itens} somenteLeitura={somenteLeitura} />
+      <div className="flex w-full items-start gap-2">
+        <Avatar lado="assistente" />
+        <div className="flex min-w-0 max-w-[85%] flex-col items-start">
+          <span className="mb-1 px-1 text-xs font-medium text-muted-foreground">Listou</span>
+          <PropostaCard
+            mensagemId={mensagem.id}
+            dados={dados}
+            listaId={lista.id}
+            itens={itens}
+            somenteLeitura={somenteLeitura}
+            // Mensagens antigas guardaram só "Confirma?": não vale repetir.
+            texto={mensagem.conteudo && mensagem.conteudo !== 'Confirma?' ? mensagem.conteudo : undefined}
+          />
+        </div>
       </div>
     )
   }

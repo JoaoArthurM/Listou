@@ -10,6 +10,8 @@ type PropostaCardProps = {
   listaId: string
   itens: Item[]
   somenteLeitura: boolean
+  /** O que o assistente disse junto da proposta: aparece no mesmo cartão. */
+  texto?: string
 }
 
 function descrever(acao: AcaoProposta): string {
@@ -23,7 +25,7 @@ function descrever(acao: AcaoProposta): string {
  * desmarcar, marcar com preço) chegam como proposta: só rodam depois que
  * alguém confirma aqui (CLAUDE.md, seção 6.2).
  */
-export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura }: PropostaCardProps) {
+export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura, texto }: PropostaCardProps) {
   const atualizar = useAtualizarItem()
   const remover = useRemoverItem()
   const atualizarCard = useAtualizarCard(listaId)
@@ -55,7 +57,8 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
   }
 
   return (
-    <div className="rounded-cartao bg-card p-4 shadow-cartao">
+    <div className="rounded-cartao border border-border bg-card p-4 shadow-cartao">
+      {texto ? <p className="mb-2.5 whitespace-pre-line text-[1.0625rem] leading-snug text-muted-foreground">{texto}</p> : null}
       <ul className="space-y-1.5">
         {dados.acoes.map((acao, i) => (
           <li key={i} className="dinheiro whitespace-normal text-[1.0625rem] leading-snug">

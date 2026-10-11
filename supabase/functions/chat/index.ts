@@ -418,7 +418,11 @@ Deno.serve(async (req) => {
     if (novos.length > 0) {
       const { data: criados, error } = await ctx.doUsuario.from('itens').insert(novos).select('id')
       if (error) throw error
-      linhas.push(comTopicos('Adicionei:', novos.map(comQuantidade)))
+      // Item que já vira proposta de compra (preço e quantidade ditos) não precisa
+      // de uma linha "Adicionei": a proposta diz o que vai acontecer com ele.
+      const viraProposta = (i: number) => comPreco.get(i)?.qtd != null && criados?.[i]?.id !== undefined
+      const soAdicionados = novos.filter((_, i) => !viraProposta(i))
+      if (soAdicionados.length > 0) linhas.push(comTopicos('Adicionei:', soAdicionados.map(comQuantidade)))
       // Com preço dito, a conta precisa de quantidade dita; não se presume "1".
       comPreco.forEach(({ qtd, preco_centavos }, indice) => {
         const nome = novos[indice]!.nome
@@ -467,18 +471,21 @@ Deno.serve(async (req) => {
     if (linhas.length === 0 && propostas.length === 0) linhas.push('Não entendi o pedido. Pode dizer de outro jeito?')
 
     // Toda resposta sai em tópicos: cada fala ganha um marcador; as listas já vêm com um por item.
-    if (linhas.length > 0) await responder(ctx, lista_id, linhas.map((l) => (l.includes('\n') ? l : `• ${l}`)).join('\n'))
+    const texto = linhas.map((l) => (l.includes('\n') ? l : `• ${l}`)).join('\n')
 
     if (propostas.length > 0) {
+      // Uma mensagem só: o texto e a proposta com os botões ficam no mesmo cartão.
       const dados: DadosProposta = { tipo: 'proposta', estado: 'pendente', acoes: propostas }
       const { error } = await ctx.admin.from('mensagens').insert({
         lista_id,
         papel: 'assistente',
         tipo: 'confirmacao',
-        conteudo: 'Confirma?',
+        conteudo: texto,
         dados,
       })
       if (error) throw error
+    } else if (texto) {
+      await responder(ctx, lista_id, texto)
     }
 
     return json({ ok: true })
