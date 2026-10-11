@@ -21,6 +21,7 @@ import {
   textoDica,
   type FaixaAplicada,
 } from '@/lib/precos'
+import { normalizarNome } from '@/lib/nomes'
 import { fecharTeclado } from '@/lib/teclado'
 import { cn } from '@/lib/utils'
 import type { DadosEtiqueta, Item, ItemPatch, Lista, ResultadoCompra } from '@/types/app'
@@ -127,7 +128,8 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
   const itemDestino = faltando.find((i) => i.id === destino)
   // O nome vem do item escolhido, da etiqueta ou do que a pessoa digitar. Nunca de um texto-padrão.
   const pedeNome = extracao.produto === null && !itemDestino
-  const nome = itemDestino?.nome ?? extracao.produto ?? (nomeTexto.trim() || null)
+  const nomeBruto = itemDestino?.nome ?? extracao.produto ?? (nomeTexto.trim() || null)
+  const nome = nomeBruto === null ? null : normalizarNome(nomeBruto)
   const pronto = qtd !== null && preco !== null && faixaAplicada !== null && nome !== null && unidadeDefinida
 
   const comoResolver = [

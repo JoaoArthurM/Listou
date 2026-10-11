@@ -111,6 +111,7 @@ EXEMPLOS (entrada -> ações)
 - "meio quilo de queijo a quarenta reais o quilo" -> adicionar_item {nome: "Queijo", qtd: 0.5, unidade: "kg", preco_centavos: 4000}
 - "o café foi doze e noventa, não onze" -> marcar_comprado {item do café, preco_centavos: 1290}
 - "tira o leite e coloca ovo" -> remover_item (leite) + adicionar_item (Ovo)
+- "ovo arroz feijão batata" ou "adiciona ovo arroz feijão batata" (produtos soltos, sem preço) -> quatro ações adicionar_item (Ovo, Arroz, Feijão, Batata), uma por produto. Nome composto continua sendo um item só: "papel higiênico", "leite condensado", "molho de tomate", "pão de forma". Item que já está em itens e não foi comprado não vira outra ação adicionar_item: o aplicativo avisa que já estava na lista.
 - "o que eu já peguei até agora?" -> consultar_comprados
 - "quanto eu já gastei?" -> consultar_total
 - "dois pacotes de macarrão por trinta reais" -> adicionar_item {nome: "Macarrão", qtd: 2, unidade: "un", preco_total_centavos: 3000}

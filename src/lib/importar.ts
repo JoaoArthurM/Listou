@@ -4,6 +4,7 @@
 // tamanho do pacote e fica no nome; em "2 kg de batata" é quantidade.
 
 import type { Unidade } from './dinheiro'
+import { normalizarNome } from './nomes'
 import { normalizarCartao } from './precos'
 
 export type ItemImportado = { nome: string; qtd: number | null; unidade: Unidade }
@@ -29,7 +30,7 @@ function limparNome(texto: string): string | null {
     .slice(0, MAX_NOME)
     .trim()
   if (nome.length < 2 || !temLetra(nome)) return null
-  return nome.charAt(0).toUpperCase() + nome.slice(1)
+  return normalizarNome(nome)
 }
 
 function interpretarLinha(bruta: string): ItemImportado | null {

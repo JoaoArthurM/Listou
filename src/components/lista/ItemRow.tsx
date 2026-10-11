@@ -1,6 +1,7 @@
 import { Check, Trash2 } from 'lucide-react'
 import { useRef, useState, type PointerEvent } from 'react'
 import { formatarQuantidade, formatarReais } from '@/lib/dinheiro'
+import { normalizarNome } from '@/lib/nomes'
 import { rotuloFaixa } from '@/lib/precos'
 import { cn } from '@/lib/utils'
 import type { Item } from '@/types/app'
@@ -131,7 +132,7 @@ export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPre
           type="button"
           role="checkbox"
           aria-checked={item.comprado}
-          aria-label={item.nome}
+          aria-label={normalizarNome(item.nome)}
           disabled={somenteLeitura}
           onClick={() => {
             setRecemMarcado(!item.comprado)
@@ -163,7 +164,7 @@ export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPre
                 item.comprado && 'text-muted-foreground line-through decoration-controle decoration-1',
               )}
             >
-              {item.nome}
+              {normalizarNome(item.nome)}
             </span>
             {detalhe ? <span className="dinheiro mt-0.5 block truncate text-[0.8125rem] text-muted-foreground">{detalhe}</span> : null}
           </span>

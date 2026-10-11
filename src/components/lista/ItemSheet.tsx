@@ -7,6 +7,7 @@ import { Segmented } from '@/components/ui/segmented'
 import { Sheet } from '@/components/ui/sheet'
 import { useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
 import { formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
+import { normalizarNome } from '@/lib/nomes'
 import { escolherFaixa, linhaCalculo, linhaFaixas } from '@/lib/precos'
 import { NOME_DA_SECAO, secaoPeloNome, SECOES, type Secao } from '@/lib/secoes'
 import type { Item, ItemPatch, Lista } from '@/types/app'
@@ -56,7 +57,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
 
   function salvar(evento: FormEvent) {
     evento.preventDefault()
-    const nomeLimpo = nome.trim()
+    const nomeLimpo = normalizarNome(nome)
     if (!nomeLimpo) return setErro('Dê um nome ao item.')
 
     const qtdPlanejada = planejada.trim() === '' ? null : parseQuantidade(planejada, unidade)
@@ -99,7 +100,7 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
     <Sheet
       open
       onOpenChange={(aberta) => !aberta && aoFechar()}
-      title={somenteLeitura ? item.nome : 'Editar item'}
+      title={somenteLeitura ? normalizarNome(item.nome) : 'Editar item'}
       description={quemAdicionou ? `${quemAdicionou} adicionou este item.` : undefined}
     >
       <form onSubmit={salvar} className="space-y-4" noValidate>

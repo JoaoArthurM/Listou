@@ -9,14 +9,13 @@ import {
   Milk,
   Package,
   PawPrint,
-  Plus,
   ShoppingCart,
   Snowflake,
   SprayCan,
   Wheat,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
@@ -28,6 +27,7 @@ import { precoAnteriorDe, preverFaltantes, type PrecoAnterior } from '@/lib/prev
 import { agruparPorSecao, NOME_DA_SECAO, type Secao } from '@/lib/secoes'
 import { cn, plural, primeiroNome } from '@/lib/utils'
 import type { Item, Lista, Resumo } from '@/types/app'
+import { BarraAdicionar } from './BarraAdicionar'
 import { ImportarSheet } from './ImportarSheet'
 import { ItemRow } from './ItemRow'
 import { ItemSheet } from './ItemSheet'
@@ -96,7 +96,6 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
   const remover = useRemoverItem()
   const usuario = useUsuario()
   const { data: membros = [] } = useMembros(lista.id)
-  const [novo, setNovo] = useState('')
   const [editando, setEditando] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [recemAdicionado, setRecemAdicionado] = useState<string | null>(null)
@@ -128,16 +127,6 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
     if (!recemAdicionado) return
     rolagem.current?.querySelector(`[data-item="${recemAdicionado}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [recemAdicionado, itens.length])
-
-  function adicionarItem(evento: FormEvent) {
-    evento.preventDefault()
-    const nome = novo.trim()
-    if (!nome) return
-    const id = crypto.randomUUID()
-    adicionar.mutate({ id, lista_id: lista.id, nome, adicionado_por: usuario.id })
-    setRecemAdicionado(id)
-    setNovo('')
-  }
 
   function alternar(item: Item) {
     // Desmarcar apaga o preço lido; marcar aqui é manual, sem preço (o preço vem pela foto ou pela edição).
@@ -232,26 +221,7 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
       </div>
 
       {somenteLeitura ? null : (
-        <form onSubmit={adicionarItem} className="flex shrink-0 items-center gap-2 border-t border-border bg-background px-3 pb-3 pt-2.5">
-          <Button variant="secondary" size="icon" aria-label="Importar itens" className="size-[3.25rem]" onClick={() => setImportando(true)}>
-            <ListPlus className="size-[1.375rem]" />
-          </Button>
-          <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
-            <input
-              value={novo}
-              onChange={(e) => setNovo(e.target.value)}
-              aria-label="Novo item"
-              placeholder="Adicionar item"
-              maxLength={80}
-              autoComplete="off"
-              enterKeyHint="done"
-              className="h-full min-w-0 flex-1 bg-transparent placeholder:text-muted-foreground focus:outline-none"
-            />
-            <Button type="submit" size="icon" aria-label="Adicionar item" disabled={!novo.trim()}>
-              <Plus className="size-5" strokeWidth={2.4} />
-            </Button>
-          </div>
-        </form>
+        <BarraAdicionar lista={lista} itens={itens} aoImportar={() => setImportando(true)} aoAdicionar={setRecemAdicionado} />
       )}
 
       {itemEmEdicao ? (

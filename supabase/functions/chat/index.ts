@@ -15,6 +15,7 @@ import { gerarJson, registrarUso, type ParteDeEntrada, type RespostaGemini } fro
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
 import { problemasDaLeitura, textoDoProblema, travaPreco } from '../_shared/leitura.ts'
 import { calcularCompra, cartoesDesconhecidos, linhaCalculo, nomeCartao, normalizarCartao } from '../_shared/precos.ts'
+import { normalizarNome } from '../_shared/nomes.ts'
 import { lerPedidoCurto } from '../_shared/pedidoCurto.ts'
 import { INSTRUCAO_CHAT, SCHEMA_CHAT } from '../_shared/prompts.ts'
 import {
@@ -50,7 +51,7 @@ const MENSAGENS_DE_CONTEXTO = 10
 const IA_FORA = 'Não consegui falar com a IA agora. Tente de novo em instantes.'
 
 const frase = (texto: string) => (/[.!?…]$/.test(texto) ? texto : `${texto}.`)
-const comInicialMaiuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
+const comInicialMaiuscula = normalizarNome
 
 function comQuantidade(item: { nome: string; unidade: Unidade; qtd_planejada: number | null }): string {
   if (item.qtd_planejada === null) return item.nome
