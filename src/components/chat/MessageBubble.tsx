@@ -38,9 +38,9 @@ export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente';
               'conic-gradient(from 0deg, hsl(var(--primary)), hsl(var(--destaque)), hsl(var(--primary) / 0.15), hsl(var(--primary)))',
           }}
         />
-        <span className="absolute inset-[2.5px] rounded-full bg-foreground" />
+        <span className="absolute inset-[2.5px] rounded-full bg-card" />
         <Sparkles
-          className={cn('relative size-4 text-destaque', pensando ? 'animate-brilha-rapido' : 'animate-brilha')}
+          className={cn('relative size-4 text-primary-texto', pensando ? 'animate-brilha-rapido' : 'animate-brilha')}
           strokeWidth={2.25}
         />
       </span>
