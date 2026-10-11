@@ -25,8 +25,8 @@ type ChatViewProps = { lista: Lista; itens: Item[]; aoVivo: AoVivo; somenteLeitu
 // fotos não entram aqui: elas têm fila própria, que sobrevive a fechar o app
 // (src/lib/filaDeFotos.ts).
 type Pendente =
-  | { id: string; tipo: 'texto'; texto: string; erro: string | null }
-  | { id: string; tipo: 'voz'; audio: string; erro: string | null }
+  | { id: string; tipo: 'texto'; texto: string; erro: string | null; antes: string[] }
+  | { id: string; tipo: 'voz'; audio: string; erro: string | null; antes: string[] }
 
 const SEM_CONEXAO = 'Sem conexão. Tente de novo quando o sinal voltar.'
 const SUGESTOES = ['O que falta?', 'Quanto já deu?']
@@ -55,7 +55,21 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const digitando = outros.filter((o) => o.digitando).map((o) => primeiroNome(o.nome) || 'Alguém')
   // A IA também "pensa" quando o pedido saiu do outro aparelho.
   const outrosEsperando = outros.filter((o) => o.esperandoIA).map((o) => primeiroNome(o.nome) || 'alguém')
-  const total = (mensagens?.length ?? 0) + pendentes.length + fotos.length
+  // O servidor grava a mensagem antes de a IA responder, e ela chega pelo
+  // Realtime enquanto o pedido ainda está pendente. Daí o balão real substitui o
+  // pendente na hora, em vez de os dois aparecerem juntos.
+  const visiveis = pendentes.filter((p) => {
+    if (p.erro) return true
+    const jaChegou = mensagens?.some(
+      (m) =>
+        m.autor_id === usuario.id &&
+        m.papel === 'usuario' &&
+        !p.antes.includes(m.id) &&
+        (p.tipo === 'voz' || m.conteudo === p.texto),
+    )
+    return !jaChegou
+  })
+  const total = (mensagens?.length ?? 0) + visiveis.length + fotos.length
 
   // A conversa abre e acompanha no fim, como qualquer chat.
   useLayoutEffect(() => {
@@ -102,6 +116,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     }
   }
 
+  const idsAtuais = () => mensagens?.map((m) => m.id) ?? []
+
   function enfileirar(pendente: Pendente) {
     setPendentes((atuais) => [...atuais, pendente])
     void mandar(pendente)
@@ -125,7 +141,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     const limpo = texto.trim()
     if (!limpo) return
     pararDeDigitar()
-    enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: limpo, erro: null })
+    enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: limpo, erro: null, antes: idsAtuais() })
     setTexto('')
   }
 
@@ -142,7 +158,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     const atual = gravacao
     setGravacao(null)
     try {
-      enfileirar({ id: crypto.randomUUID(), tipo: 'voz', audio: await atual.parar(), erro: null })
+      enfileirar({ id: crypto.randomUUID(), tipo: 'voz', audio: await atual.parar(), erro: null, antes: idsAtuais() })
     } catch (erro) {
       avisar(mensagemDoErro(erro, 'Não deu para preparar o áudio.'), 'erro')
     }
@@ -180,7 +196,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                     variant="secondary"
                     size="sm"
                     disabled={offline}
-                    onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null })}
+                    onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null, antes: idsAtuais() })}
                   >
                     {sugestao}
                   </Button>
@@ -204,7 +220,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             </li>
           ))}
 
-          {pendentes.map((pendente) => (
+          {visiveis.map((pendente) => (
             <li key={pendente.id} className="flex animate-surge flex-col items-end gap-1.5">
               {pendente.tipo === 'texto' ? (
                 <Balao lado="eu" className={pendente.erro ? 'opacity-60' : undefined}>
