@@ -10,6 +10,8 @@ type BalaoProps = {
   /** "eu" à direita; a outra pessoa da lista e o assistente à esquerda. */
   lado: 'eu' | 'outro' | 'assistente'
   autor?: string | null
+  /** Assistente trabalhando: o avatar anima mais rápido. */
+  pensando?: boolean
   children: ReactNode
   className?: string
 }
@@ -23,30 +25,46 @@ const estilos = {
   assistente: 'rounded-bl-md border border-border bg-card text-foreground shadow-cartao',
 }
 
-/** Foto de perfil redonda: inicial da pessoa, ou o brilho do assistente. */
-export function Avatar({ lado, nome }: { lado: 'outro' | 'assistente'; nome?: string | null }) {
+/** Foto de perfil redonda: inicial da pessoa, ou o orbe animado do assistente. */
+export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente'; nome?: string | null; pensando?: boolean }) {
+  if (lado === 'assistente') {
+    return (
+      <span aria-hidden className="relative mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
+        {/* Anel em degradê girando; o miolo escuro fica parado por cima. */}
+        <span
+          className={cn('absolute inset-0 rounded-full', pensando ? 'animate-gira-rapido' : 'animate-gira')}
+          style={{
+            background:
+              'conic-gradient(from 0deg, hsl(var(--primary)), hsl(var(--destaque)), hsl(var(--primary) / 0.15), hsl(var(--primary)))',
+          }}
+        />
+        <span className="absolute inset-[2.5px] rounded-full bg-foreground" />
+        <Sparkles
+          className={cn('relative size-4 text-destaque', pensando ? 'animate-brilha-rapido' : 'animate-brilha')}
+          strokeWidth={2.25}
+        />
+      </span>
+    )
+  }
   const inicial = nome?.trim().charAt(0).toUpperCase()
   return (
     <span
       aria-hidden
-      className={cn(
-        'mb-0.5 flex size-8 shrink-0 select-none items-center justify-center rounded-full text-sm font-semibold',
-        lado === 'assistente' ? 'bg-foreground text-background' : 'bg-destaque text-destaque-foreground',
-      )}
+      className="mb-0.5 flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-destaque text-sm font-semibold text-destaque-foreground"
     >
-      {lado === 'assistente' ? <Sparkles className="size-4" /> : inicial || <User className="size-4" />}
+      {inicial || <User className="size-4" />}
     </span>
   )
 }
 
 /** Balão de texto do chat. */
-export function Balao({ lado, autor, children, className }: BalaoProps) {
+export function Balao({ lado, autor, pensando, children, className }: BalaoProps) {
   const nome = lado === 'assistente' ? 'Listou' : autor
   return (
     // w-full: dentro de um pai flex o balão encolheria até o texto e os 85% de
     // largura máxima passariam a valer sobre esse tamanho encolhido.
     <div className={cn('flex w-full items-end gap-2', lado === 'eu' ? 'justify-end' : 'justify-start')}>
-      {lado === 'eu' ? null : <Avatar lado={lado} nome={autor} />}
+      {lado === 'eu' ? null : <Avatar lado={lado} nome={autor} pensando={pensando} />}
       <div className={cn('flex min-w-0 max-w-[85%] flex-col', lado === 'eu' ? 'items-end' : 'items-start')}>
         {nome ? <span className="mb-1 px-1 text-xs font-medium text-muted-foreground">{nome}</span> : null}
         <div
@@ -79,6 +97,7 @@ export function Digitando({ lado, texto }: { lado: 'outro' | 'assistente'; texto
   return (
     <Balao
       lado={lado}
+      pensando={lado === 'assistente'}
       className={cn('flex min-h-11 items-center gap-2.5 text-[0.9375rem]', lado === 'assistente' && 'text-muted-foreground')}
     >
       <Pontos className={lado === 'assistente' ? 'text-primary' : undefined} />

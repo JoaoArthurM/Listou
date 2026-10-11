@@ -87,6 +87,14 @@ export default {
           '60%': { opacity: '1', transform: 'scaleY(1.15)' },
           '100%': { opacity: '1', transform: 'scaleY(1)' },
         },
+        // Avatar do assistente: o anel gira e o brilho respira.
+        gira: {
+          to: { transform: 'rotate(360deg)' },
+        },
+        brilha: {
+          '0%, 100%': { transform: 'scale(1) rotate(0deg)', opacity: '0.85' },
+          '50%': { transform: 'scale(1.18) rotate(18deg)', opacity: '1' },
+        },
         varredura: {
           from: { transform: 'translateY(-100%)' },
           to: { transform: 'translateY(100%)' },
@@ -100,6 +108,10 @@ export default {
         pulso: 'pulso 1.2s ease-in-out infinite',
         onda: 'onda 1.1s ease-in-out infinite',
         sinal: 'sinal 520ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        gira: 'gira 6s linear infinite',
+        'gira-rapido': 'gira 1.1s linear infinite',
+        brilha: 'brilha 2.4s ease-in-out infinite',
+        'brilha-rapido': 'brilha 0.9s ease-in-out infinite',
         varredura: 'varredura 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
       },
     },
