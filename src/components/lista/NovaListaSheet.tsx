@@ -1,4 +1,6 @@
+import { ScanLine } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { LeitorQr } from '@/components/lista/LeitorQr'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
@@ -57,12 +59,12 @@ export function CodigoSheet({ aoFechar }: { aoFechar: () => void }) {
   const aceitar = useAceitarConvite()
   const [codigo, setCodigo] = useState('')
   const [erro, setErro] = useState<string | null>(null)
+  const [lendo, setLendo] = useState(false)
 
-  function enviar(evento: FormEvent) {
-    evento.preventDefault()
-    if (codigo.length !== 6) return setErro('O código tem 6 caracteres.')
+  function entrar(codigoDoConvite: string) {
+    if (codigoDoConvite.length !== 6) return setErro('O código tem 6 caracteres.')
     setErro(null)
-    aceitar.mutate(codigo, {
+    aceitar.mutate(codigoDoConvite, {
       onSuccess: (listaId) => {
         aoFechar()
         navegar(`/lista/${listaId}`)
@@ -71,8 +73,24 @@ export function CodigoSheet({ aoFechar }: { aoFechar: () => void }) {
     })
   }
 
+  function enviar(evento: FormEvent) {
+    evento.preventDefault()
+    entrar(codigo)
+  }
+
+  // O QR leu um convite: volta para o campo com o código preenchido e já entra.
+  // Se o convite falhar (vencido, por exemplo), o motivo aparece no campo.
+  function aoLerQr(lido: string) {
+    setCodigo(lido)
+    setLendo(false)
+    entrar(lido)
+  }
+
   return (
-    <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title="Entrar numa lista" description="Digite o código que a outra pessoa gerou nas opções da lista dela.">
+    <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title="Entrar numa lista" description={lendo ? 'Leia o QR code que a outra pessoa abriu nas opções da lista.' : 'Digite o código ou leia o QR code que a outra pessoa gerou nas opções da lista dela.'}>
+      {lendo ? (
+        <LeitorQr aoLer={aoLerQr} aoCancelar={() => setLendo(false)} />
+      ) : (
       <form onSubmit={enviar} className="space-y-4" noValidate>
         <Field
           label="Código de convite"
@@ -90,7 +108,12 @@ export function CodigoSheet({ aoFechar }: { aoFechar: () => void }) {
         <Button type="submit" className="w-full" disabled={aceitar.isPending}>
           {aceitar.isPending ? 'Entrando…' : 'Entrar na lista'}
         </Button>
+        <Button type="button" variant="secondary" className="w-full" disabled={aceitar.isPending} onClick={() => setLendo(true)}>
+          <ScanLine className="size-5" />
+          Ler QR code
+        </Button>
       </form>
+      )}
     </Sheet>
   )
 }

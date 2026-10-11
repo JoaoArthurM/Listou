@@ -310,6 +310,22 @@ describe('acaoSchema (resposta do Gemini em chat)', () => {
 })
 
 describe('interpretarAcoes', () => {
+  it('aceita atualizar_quantidade com modo somar', () => {
+    const { acoes, descartadas } = interpretarAcoes({
+      acoes: [{ tipo: 'atualizar_quantidade', item_id: '11111111-1111-4111-8111-111111111111', qtd: 2, modo: 'somar' }],
+    })
+    expect(descartadas).toBe(0)
+    expect(acoes[0]).toMatchObject({ tipo: 'atualizar_quantidade', qtd: 2, modo: 'somar' })
+  })
+
+  it('descarta atualizar_quantidade com modo desconhecido', () => {
+    const { acoes, descartadas } = interpretarAcoes({
+      acoes: [{ tipo: 'atualizar_quantidade', item_id: '11111111-1111-4111-8111-111111111111', qtd: 2, modo: 'dobrar' }],
+    })
+    expect(acoes).toHaveLength(0)
+    expect(descartadas).toBe(1)
+  })
+
   it('aceita o preço do conjunto, sem dividir', () => {
     const { acoes, descartadas } = interpretarAcoes({
       acoes: [{ tipo: 'marcar_comprado', item_id: '11111111-1111-4111-8111-111111111111', qtd: 5, preco_total_centavos: 1000, preco_centavos: null }],

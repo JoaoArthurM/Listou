@@ -20,6 +20,7 @@ import { INSTRUCAO_CHAT, SCHEMA_CHAT } from '../_shared/prompts.ts'
 import {
   chatEntradaSchema,
   dadosEtiquetaSchema,
+  faixasSchema,
   interpretarAcoes,
   type Acao,
   type AcaoProposta,
@@ -41,6 +42,8 @@ type ItemDaLista = {
   comprado: boolean
   qtd_planejada: number | null
   qtd_comprada: number | null
+  preco_unit_centavos: number | null
+  faixas_preco: unknown
 }
 
 const MENSAGENS_DE_CONTEXTO = 10
@@ -260,7 +263,7 @@ Deno.serve(async (req) => {
     const [consultaItens, consultaHistorico, consultaCard] = await Promise.all([
       ctx.doUsuario
         .from('itens')
-        .select('id, nome, unidade, comprado, qtd_planejada, qtd_comprada')
+        .select('id, nome, unidade, comprado, qtd_planejada, qtd_comprada, preco_unit_centavos, faixas_preco')
         .eq('lista_id', lista_id)
         .order('criado_em'),
       ctx.doUsuario
@@ -361,6 +364,7 @@ Deno.serve(async (req) => {
     // Itens novos que já vêm com preço dito: depois de gravados, viram proposta de compra.
     const comPreco = new Map<number, { qtd: number | null; preco_centavos: number }>()
     const repetidos: string[] = []
+    const novasQuantidades: Array<{ id: string; nome: string; unidade: Unidade; qtd: number }> = []
     const propostas: AcaoProposta[] = []
     const paraOCarrinho: Array<{ item: ItemDaLista; qtd: number | null }> = []
     const falas: string[] = []
@@ -426,11 +430,29 @@ Deno.serve(async (req) => {
           if (!item) naoEntendidas += 1
           else if (item.comprado && acao.preco_centavos === undefined && acao.qtd === undefined) {
             avisos.push(`“${item.nome}” já está no carrinho.`)
-          } else if (item.comprado && acao.preco_centavos === undefined) {
-            // Corrigir só a quantidade exige preço: a conta é do app, e o preço dele já está no item.
-            avisos.push(`Para corrigir a quantidade de “${item.nome}”, diga também o preço.`)
           } else if (item.unidade === 'un' && acao.qtd !== undefined && !Number.isInteger(acao.qtd)) {
             avisos.push(`“${item.nome}” é vendido por unidade: diga um número inteiro.`)
+          } else if (item.comprado && acao.preco_centavos === undefined) {
+            // Corrigir só a quantidade: o preço já está no item. Com faixas gravadas, a faixa
+            // é escolhida de novo para a nova quantidade (seção 6.4); a conta é do código.
+            const faixas = faixasSchema.safeParse(item.faixas_preco)
+            const compra =
+              faixas.success && faixas.data.length > 0 && acao.qtd !== undefined
+                ? calcularCompra(faixas.data, acao.qtd, lista.cartoes)
+                : null
+            const preco = compra?.faixa.preco_centavos ?? item.preco_unit_centavos
+            if (preco === null || acao.qtd === undefined) {
+              avisos.push(`Para corrigir a quantidade de “${item.nome}”, diga também o preço.`)
+            } else {
+              propostas.push({
+                tipo: 'marcar_comprado',
+                item_id: item.id,
+                nome: item.nome,
+                unidade: item.unidade,
+                qtd: acao.qtd,
+                preco_centavos: preco,
+              })
+            }
           } else if (acao.preco_centavos === undefined) {
             // Sem preço não mexe no total: é o mesmo que tocar no círculo do item.
             // A quantidade só é gravada se foi dita.
@@ -456,6 +478,28 @@ Deno.serve(async (req) => {
         case 'informar_quantidade':
           qtdDoCard = acao.qtd
           break
+        case 'atualizar_quantidade': {
+          const item = porId.get(acao.item_id)
+          if (!item) {
+            naoEntendidas += 1
+            break
+          }
+          if (item.comprado) {
+            avisos.push(`“${item.nome}” já está no carrinho. Para mudar a quantidade comprada, diga também o preço.`)
+            break
+          }
+          const nova = acao.modo === 'somar' ? (item.qtd_planejada ?? 0) + acao.qtd : acao.qtd
+          if (item.unidade === 'un' && !Number.isInteger(nova)) {
+            avisos.push(`“${item.nome}” é vendido por unidade: diga um número inteiro.`)
+            break
+          }
+          const arredondada = Math.round(nova * 1000) / 1000
+          if (arredondada > 0 && arredondada <= 9999) {
+            novasQuantidades.push({ id: item.id, nome: item.nome, unidade: item.unidade, qtd: arredondada })
+            item.qtd_planejada = arredondada // várias ações no mesmo pedido enxergam o valor novo
+          } else avisos.push(`Quantidade de “${item.nome}” fora do limite.`)
+          break
+        }
         case 'consultar_faltantes':
           querFaltantes = true
           break
@@ -489,6 +533,18 @@ Deno.serve(async (req) => {
         if (qtd === null) avisos.push(`Quantos “${nome}” você levou? Diga a quantidade junto com o preço.`)
         else if (id) propostas.push({ tipo: 'marcar_comprado', item_id: id, nome, unidade: novos[indice]!.unidade, qtd, preco_centavos })
       })
+    }
+    if (novasQuantidades.length > 0) {
+      for (const n of novasQuantidades) {
+        const { error } = await ctx.doUsuario.from('itens').update({ qtd_planejada: n.qtd }).eq('id', n.id)
+        if (error) throw error
+      }
+      linhas.push(
+        comTopicos(
+          'Quantidade atualizada:',
+          novasQuantidades.map((n) => comQuantidade({ nome: n.nome, unidade: n.unidade, qtd_planejada: n.qtd })),
+        ),
+      )
     }
     if (repetidos.length > 0) linhas.push(comTopicos(`Já ${repetidos.length === 1 ? 'estava' : 'estavam'} na lista:`, repetidos))
 

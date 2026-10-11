@@ -29,7 +29,7 @@ type Pendente =
   | { id: string; tipo: 'voz'; audio: string; erro: string | null; antes: string[] }
 
 const SEM_CONEXAO = 'Sem conexão. Tente de novo quando o sinal voltar.'
-const SUGESTOES = ['O que falta?', 'O que já peguei?', 'Quanto já deu?']
+const SUGESTOES = ['O que falta?', 'O que já peguei?']
 const PAUSA_DE_DIGITACAO_MS = 2500
 
 const mensagemDoErro = (erro: unknown, padrao: string) => (erro instanceof Error && erro.message ? erro.message : padrao)
@@ -75,7 +75,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   useLayoutEffect(() => {
     const el = rolagem.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [total, esperandoIA, digitando.length, outrosEsperando.length])
+  }, [total, esperandoIA, digitando.length, outrosEsperando.length, mostrarAtalhos])
 
   // Os outros aparelhos ficam sabendo que há um pedido meu com a IA.
   useEffect(() => {
@@ -304,6 +304,24 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             </li>
           ) : null}
         </ol>
+
+        {/* Sugestões no fim da conversa: um toque envia, como se tivesse digitado. */}
+        {mostrarAtalhos && !somenteLeitura ? (
+          <div className="mt-3 flex animate-surge flex-wrap justify-end gap-2">
+            {SUGESTOES.map((sugestao) => (
+              <button
+                key={sugestao}
+                type="button"
+                disabled={offline}
+                onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null, antes: idsAtuais() })}
+                className="flex h-11 items-center gap-2 rounded-full border border-controle/70 bg-card pl-4 pr-3 text-[0.9375rem] font-medium transition-colors active:bg-muted disabled:opacity-50"
+              >
+                {sugestao}
+                <ArrowUpRight aria-hidden className="size-4 text-primary-texto" strokeWidth={2.4} />
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {somenteLeitura ? null : (
@@ -312,22 +330,6 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             <p role="status" className="mb-2 px-2 text-sm text-muted-foreground">
               Sem conexão. As fotos de etiqueta ficam na fila e são lidas quando o sinal voltar; texto e voz precisam dele.
             </p>
-          ) : null}
-          {mostrarAtalhos ? (
-            <div className="-mx-3 mb-2.5 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
-              {SUGESTOES.map((sugestao) => (
-                <button
-                  key={sugestao}
-                  type="button"
-                  disabled={offline}
-                  onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null, antes: idsAtuais() })}
-                  className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-controle/70 bg-card pl-4 pr-3 text-[0.9375rem] font-medium transition-colors active:bg-muted disabled:opacity-50"
-                >
-                  {sugestao}
-                  <ArrowUpRight aria-hidden className="size-4 text-primary-texto" strokeWidth={2.4} />
-                </button>
-              ))}
-            </div>
           ) : null}
           {gravacao ? (
             <Gravador

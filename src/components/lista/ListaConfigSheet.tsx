@@ -4,6 +4,7 @@ import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
+import { QrCodigo } from '@/components/lista/QrCodigo'
 import { useUsuario } from '@/hooks/sessao'
 import {
   useAtualizarLista,
@@ -16,6 +17,7 @@ import {
 import { avisar } from '@/lib/avisos'
 import { formatarReais, formatarValor, parseDinheiro } from '@/lib/dinheiro'
 import { nomeCartao } from '@/lib/precos'
+import { linkDoConvite } from '@/lib/qr'
 import { resumirCompra } from '@/lib/resumo'
 import { navegar } from '@/lib/rota'
 import { listarNomes, plural } from '@/lib/utils'
@@ -205,6 +207,10 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
               <div className="mt-2.5 rounded-cartao bg-card p-4 shadow-cartao">
                 <p className="text-[0.9375rem] text-muted-foreground">Código válido por 7 dias</p>
                 <p className="dinheiro mt-1.5 select-all text-[2rem] font-semibold leading-none tracking-[0.18em]">{codigo}</p>
+                <div className="mt-4">
+                  <QrCodigo conteudo={linkDoConvite(codigo)} rotulo={`QR code do convite ${codigo}`} />
+                  <p className="mt-2 text-center text-[0.9375rem] text-muted-foreground">Ou peça para ler este QR code no outro celular</p>
+                </div>
                 <Button variant="dark" className="mt-4 w-full" onClick={() => void compartilhar()}>
                   {copiado ? <Check className="size-5" /> : 'share' in navigator ? <Share2 className="size-5" /> : <Copy className="size-5" />}
                   {copiado ? 'Copiado' : 'share' in navigator ? 'Compartilhar convite' : 'Copiar convite'}

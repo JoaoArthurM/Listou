@@ -205,8 +205,17 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('consultar_total') }),
   z.object({ tipo: z.literal('consultar_comprados') }),
   z.object({ tipo: z.literal('informar_quantidade'), qtd: quantidade }),
+  // Quantidade planejada de um item da lista: "põe 3 leites", "mais 2 leites" (modo somar; a soma é do código).
+  z.object({
+    tipo: z.literal('atualizar_quantidade'),
+    item_id: uuid,
+    qtd: quantidade,
+    modo: z.enum(['definir', 'somar']).optional(),
+  }),
   z.object({ tipo: z.literal('responder'), texto: z.string().trim().min(1).max(600) }),
 ])
+
+export const faixasSchema = z.array(faixaSchema)
 
 export type Acao = z.infer<typeof acaoSchema>
 

@@ -84,6 +84,11 @@ COMO ENTENDER A FALA (vale para texto e áudio)
 - Preço do CONJUNTO ("5 por 10", "dois por 30", "deu 30 no total", "30 os dois", "10 reais as cinco"): vai em preco_total_centavos, exatamente como foi dito, junto com qtd. Não divida: o aplicativo faz a conta. Nunca peça o preço de cada unidade só porque o preço é do conjunto.
 - Resposta curta a uma pergunta do assistente ("5 por 10", "6 a 4,50", "3") refere-se ao item que a última fala do assistente em "conversa_recente" perguntou. Use o item_id dele.
 - Pedido de conta ("faz o cálculo", "calcula aí", "divide", "e aí, quanto fica?") com quantidade e preço já ditos na "conversa_recente": repita a mesma ação com os valores que a pessoa disse (preco_total_centavos se foi preço do conjunto). Não recuse e não pergunte de novo o que já foi dito.
+- Multiplicação é quantidade e preço de UMA unidade: "3 x 4,50", "3x4,50", "3 vezes 4,50", "4,50 x 3", "3 a 4,50" = qtd 3, preco_centavos 450.
+- Número inteiro depois de "por", "a", "de", "foi", "deu", "custou" ou "reais" é valor em reais: "5 por 10" = 1000 centavos, "a 8" = 800. Número com vírgula ou ponto é reais com centavos.
+- Peso: "500 gramas", "meio quilo" = 0.5, "um quilo e duzentos" = 1.2, "250g" = 0.25. Com peso, unidade "kg". "meio quilo por 8 reais" é preço do conjunto (preco_total_centavos 800, qtd 0.5).
+- Várias compras na mesma frase, cada uma com o seu preço ("maçã 5 por 10 e banana 6 por 8"): uma ação por item, cada uma com a sua quantidade e o seu preço.
+- Resposta curta a "Quantos X você levou?" só com o número ("5", "cinco", "levei 5"): marcar_comprado do item perguntado com qtd, sem preço. Fala social ("ok", "valeu", "obrigado", "beleza", "bom dia") não é pedido: use "responder" com uma frase curta e simpática.
 - Vários itens na mesma frase viram uma ação por item. "dois de cada" ou "um de cada" vale para todos os itens citados.
 - Frases como "o que falta?", "o que já peguei?", "quanto deu?", "quanto sobrou do orçamento?" são consultas, mesmo faladas de qualquer jeito.
 
@@ -95,6 +100,7 @@ AÇÕES (campo "tipo")
 - consultar_faltantes: o usuário quer saber o que falta comprar.
 - consultar_total: o usuário quer saber quanto já deu, o total do carrinho ou quanto resta do orçamento. É só sobre dinheiro.
 - consultar_comprados: o usuário quer saber O QUE já pegou, o que já está no carrinho ou o que já foi comprado. É a lista de itens, não o valor.
+- atualizar_quantidade: mudar a quantidade planejada de um item que JÁ está na lista e ainda não foi comprado ("põe 3 leites", "são 3 leites", "muda o arroz pra 2", "mais 2 leites", "adiciona mais um pão"). Campos: item_id, qtd e modo: "definir" (vira exatamente qtd) ou "somar" (acrescenta qtd ao que já havia; "mais", "outro", "mais um"). Você não soma: só diga o modo.
 - informar_quantidade: só quando "card_aberto" não é null e a mensagem diz quanto o usuário levou daquele produto ("levei 6", "3", "meio quilo" = 0.5). Campo: qtd.
 - responder: uma frase curta em português para pedir esclarecimento ou responder algo que não cabe nas ações acima. Campo: texto.
 
@@ -111,6 +117,14 @@ EXEMPLOS (entrada -> ações)
 - (o assistente perguntou quantas "Maçã" ele levou) "5 por 10" -> marcar_comprado {item da Maçã, qtd: 5, preco_total_centavos: 1000}
 - (a pessoa disse "5 por 10" e o assistente pediu o preço unitário) "faz o cálculo" -> a mesma ação: marcar_comprado {item da Maçã, qtd: 5, preco_total_centavos: 1000}
 - "leite" (só o nome) -> adicionar_item {nome: "Leite"}
+- "3 x 4,50 de sabão" -> adicionar_item {nome: "Sabão", qtd: 3, preco_centavos: 450}
+- "meio quilo de presunto por 12 reais" -> adicionar_item {nome: "Presunto", qtd: 0.5, unidade: "kg", preco_total_centavos: 1200}
+- "maçã 5 por 10 e banana 6 por 8" -> duas ações adicionar_item (Maçã qtd 5 preco_total_centavos 1000; Banana qtd 6 preco_total_centavos 800)
+- (leite já está na lista) "mais 2 leites" -> atualizar_quantidade {item do leite, qtd: 2, modo: "somar"}
+- (leite já está na lista) "põe 3 leites" -> atualizar_quantidade {item do leite, qtd: 3, modo: "definir"}
+- (o leite já está no carrinho) "na verdade eram 4" -> marcar_comprado {item do leite, qtd: 4}; o aplicativo reaproveita o preço que já estava gravado
+- "valeu!" -> responder "De nada! Qualquer coisa é só chamar."
+- "5" sem pergunta aberta -> responder pedindo para dizer de qual item é
 
 REGRAS
 - Use somente item_id que apareça em "itens". Nunca invente um id.
@@ -132,6 +146,7 @@ const TIPOS_DE_ACAO = [
   'consultar_total',
   'consultar_comprados',
   'informar_quantidade',
+  'atualizar_quantidade',
   'responder',
 ]
 
@@ -151,9 +166,10 @@ export const SCHEMA_CHAT = {
           item_id: { type: ['string', 'null'], description: 'Id de um item de "itens".' },
           preco_centavos: { type: ['integer', 'null'], description: 'Em marcar_comprado e adicionar_item, só quando o usuário disse o preço. Centavos inteiros.' },
           preco_total_centavos: { type: ['integer', 'null'], description: 'Em marcar_comprado e adicionar_item, quando o usuário disse o preço do conjunto ("5 por 10"). Centavos inteiros, como dito; não divida.' },
+          modo: { type: ['string', 'null'], enum: ['definir', 'somar', null], description: 'Só em atualizar_quantidade.' },
           texto: { type: ['string', 'null'], description: 'Só em responder.' },
         },
-        required: ['tipo', 'nome', 'qtd', 'unidade', 'item_id', 'preco_centavos', 'preco_total_centavos', 'texto'],
+        required: ['tipo', 'nome', 'qtd', 'unidade', 'item_id', 'preco_centavos', 'preco_total_centavos', 'modo', 'texto'],
       },
     },
   },
