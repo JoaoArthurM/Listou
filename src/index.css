@@ -336,6 +336,39 @@
   }
 }
 
+/* Filhos diretos entram em sequência, um pouco depois do anterior. */
+.escalonada > * {
+  animation: surge 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.escalonada > *:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.escalonada > *:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+.escalonada > *:nth-child(4) {
+  animation-delay: 165ms;
+}
+
+.escalonada > *:nth-child(5) {
+  animation-delay: 220ms;
+}
+
+.escalonada > *:nth-child(6) {
+  animation-delay: 275ms;
+}
+
+.escalonada > *:nth-child(7) {
+  animation-delay: 330ms;
+}
+
+.escalonada > *:nth-child(8) {
+  animation-delay: 385ms;
+}
+
 /* Bloco de conteúdo que ainda não chegou: fundo suave com um brilho passando. */
 .esqueleto {
   background-color: hsl(var(--muted));

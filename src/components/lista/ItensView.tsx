@@ -80,7 +80,7 @@ function Grupo({ titulo, icone: Icone, contagem, children }: GrupoProps) {
           </span>
         </button>
       </h2>
-      {aberto ? <ul className="pb-1 pl-0.5">{children}</ul> : null}
+      {aberto ? <ul className="animate-surge pb-1 pl-0.5">{children}</ul> : null}
     </section>
   )
 }

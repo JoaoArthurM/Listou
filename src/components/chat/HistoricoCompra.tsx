@@ -110,7 +110,7 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
                 <p className="text-[0.875rem] capitalize leading-tight">{diaSemana.format(dia.data).replace('.', '')}</p>
                 <p className="dinheiro text-[1.125rem] leading-tight text-foreground/80">{dia.data.getDate()}</p>
               </div>
-              <ol className="min-w-0 flex-1 space-y-2">
+              <ol className="escalonada min-w-0 flex-1 space-y-2">
                 {dia.registros.map((registro) => (
                   <li key={registro.id} className="rounded-cartao bg-card px-4 py-3 shadow-cartao">
                     <p className="flex items-baseline justify-between gap-2 text-[0.8125rem]">

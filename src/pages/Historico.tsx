@@ -79,7 +79,7 @@ export function Historico() {
             </Button>
           </div>
         ) : listas && listas.length > 0 ? (
-          <ul className="space-y-3">
+          <ul className="escalonada space-y-3">
             {listas.map((lista) => (
               <LinhaHistorico key={lista.id} lista={lista} meuId={usuario.id} />
             ))}

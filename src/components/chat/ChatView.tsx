@@ -50,6 +50,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const [pendentes, setPendentes] = useState<Pendente[]>([])
   const [gravacao, setGravacao] = useState<Gravacao | null>(null)
   const rolagem = useRef<HTMLDivElement>(null)
+  // Mensagens que já estavam na conversa ao abrir não animam; só as que chegam depois.
+  const iniciais = useRef<Set<string> | null>(null)
   const pausa = useRef<number>()
   const { anunciar, outros } = aoVivo
 
@@ -76,6 +78,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     return !jaChegou
   })
   const total = (mensagens?.length ?? 0) + visiveis.length + fotos.length
+  if (iniciais.current === null && mensagens) iniciais.current = new Set(mensagens.map((m) => m.id))
 
   // A conversa abre e acompanha no fim, como qualquer chat.
   useLayoutEffect(() => {
@@ -226,7 +229,10 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             const novoDia = !anterior || chaveDoDia(new Date(anterior.criado_em)) !== chaveDoDia(quando)
             const minha = mensagem.autor_id === usuario.id
             return (
-              <li key={mensagem.id}>
+              <li
+                key={mensagem.id}
+                className={iniciais.current && !iniciais.current.has(mensagem.id) ? (minha ? 'animate-chega' : 'animate-surge') : undefined}
+              >
                 {novoDia ? (
                   <p className="mb-3 mt-1 flex justify-center">
                     <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium capitalize text-muted-foreground">
@@ -391,11 +397,11 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                 />
                 {/* Campo vazio oferece o microfone; com texto, o botão vira enviar. */}
                 {texto.trim() === '' && podeFalar ? (
-                  <Button variant="dark" size="icon" aria-label="Falar o pedido" disabled={offline} onClick={() => void comecarAGravar()}>
+                  <Button key="mic" variant="dark" size="icon" aria-label="Falar o pedido" className="animate-pop" disabled={offline} onClick={() => void comecarAGravar()}>
                     <Mic className="size-5" />
                   </Button>
                 ) : (
-                  <Button type="submit" variant="dark" size="icon" aria-label="Enviar mensagem" disabled={!texto.trim() || offline}>
+                  <Button key="enviar" type="submit" variant="dark" size="icon" aria-label="Enviar mensagem" className="animate-pop" disabled={!texto.trim() || offline}>
                     <ArrowUp className="size-5" strokeWidth={2.4} />
                   </Button>
                 )}

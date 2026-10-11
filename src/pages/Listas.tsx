@@ -137,7 +137,7 @@ export function Listas() {
               <CartaoDestaque lista={destaque} meuId={usuario.id} sozinho={outras.length === 0} />
             </div>
             {outras.length > 0 ? (
-              <ul className="mt-8 space-y-2.5">
+              <ul className="escalonada mt-8 space-y-2.5">
                 {outras.map((lista) => (
                   <LinhaLista key={lista.id} lista={lista} meuId={usuario.id} />
                 ))}

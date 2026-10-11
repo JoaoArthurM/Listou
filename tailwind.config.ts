@@ -96,6 +96,22 @@ export default {
           to: { transform: 'translateY(100%)' },
         },
         // Item caindo na cesta da tela de carregamento: some ao passar da borda.
+        // Entrada com um leve "estouro": botões que trocam de função e valores que mudam.
+        pop: {
+          '0%': { transform: 'scale(0.55)', opacity: '0' },
+          '60%': { transform: 'scale(1.12)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        // Troca de tela: só aparece, sem mover o conteúdo.
+        entra: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        // Mensagem minha chegando: vem da direita, no sentido do envio.
+        chega: {
+          from: { opacity: '0', transform: 'translate(14px, 8px) scale(0.96)' },
+          to: { opacity: '1', transform: 'translate(0, 0) scale(1)' },
+        },
         cai: {
           '0%': { transform: 'translateY(-9px)', opacity: '0' },
           '20%': { opacity: '1' },
@@ -113,6 +129,9 @@ export default {
         gira: 'gira 6s linear infinite',
         'gira-rapido': 'gira 1.1s linear infinite',
         varredura: 'varredura 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
+        pop: 'pop 300ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        entra: 'entra 240ms ease-out both',
+        chega: 'chega 340ms cubic-bezier(0.16, 1, 0.3, 1) both',
         cai: 'cai 1.5s cubic-bezier(0.5, 0, 0.9, 0.5) infinite',
       },
     },

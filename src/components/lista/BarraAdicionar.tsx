@@ -190,11 +190,11 @@ export function BarraAdicionar({ lista, itens, aoImportar, aoAdicionar }: BarraA
             />
             {/* Campo vazio oferece o microfone; com texto, o botão vira adicionar. */}
             {texto.trim() === '' && podeFalar ? (
-              <Button type="button" variant="dark" size="icon" aria-label="Falar os itens" disabled={offline || ocupado} onClick={() => void comecarAGravar()}>
+              <Button key="mic" type="button" variant="dark" size="icon" aria-label="Falar os itens" className="animate-pop" disabled={offline || ocupado} onClick={() => void comecarAGravar()}>
                 <Mic className="size-5" />
               </Button>
             ) : (
-              <Button type="submit" size="icon" aria-label="Adicionar item" disabled={!texto.trim() || ocupado}>
+              <Button key="adicionar" type="submit" size="icon" aria-label="Adicionar item" className="animate-pop" disabled={!texto.trim() || ocupado}>
                 <Plus className="size-5" strokeWidth={2.4} />
               </Button>
             )}

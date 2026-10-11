@@ -29,7 +29,7 @@ export function Moldura({ children, rodape, topo, relevo, className }: MolduraPr
       {topo ? <header className="moldura-topo pt-seguro min-h-0 flex-1 text-moldura-foreground">{topo}</header> : null}
       <main
         className={cn(
-          'moldura-folha relative isolate flex min-h-0 flex-col overflow-hidden rounded-b-folha bg-background',
+          'moldura-folha relative isolate flex animate-entra min-h-0 flex-col overflow-hidden rounded-b-folha bg-background',
           topo ? 'moldura-folha-ancorada rounded-t-folha' : 'pt-seguro flex-1',
           className,
         )}
