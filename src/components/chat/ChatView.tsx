@@ -75,7 +75,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   useLayoutEffect(() => {
     const el = rolagem.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [total, esperandoIA, digitando.length, outrosEsperando.length, mostrarAtalhos])
+  }, [total, esperandoIA, digitando.length, outrosEsperando.length])
 
   // Os outros aparelhos ficam sabendo que há um pedido meu com a IA.
   useEffect(() => {
