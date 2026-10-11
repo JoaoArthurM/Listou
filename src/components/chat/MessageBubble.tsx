@@ -98,7 +98,10 @@ export function Digitando({ lado, texto }: { lado: 'outro' | 'assistente'; texto
       className={cn('flex min-h-11 items-center gap-2.5 text-[0.9375rem]', lado === 'assistente' && 'text-muted-foreground')}
     >
       <Pontos className={lado === 'assistente' ? 'text-primary' : undefined} />
-      <span role="status">{texto}</span>
+      {/* A chave refaz a entrada suave a cada frase nova. */}
+      <span key={texto} role="status" className="animate-surge">
+        {texto}
+      </span>
     </Balao>
   )
 }

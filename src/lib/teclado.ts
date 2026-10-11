@@ -9,6 +9,17 @@
 
 const LIMIAR_TECLADO = 140
 
+/**
+ * Fecha o teclado do celular tirando o foco do campo ativo. A tela é pequena e,
+ * depois de enviar, fotografar ou confirmar, o teclado só cobre a conversa.
+ * Botões e links não abrem teclado, então só campos de texto são soltos.
+ */
+export function fecharTeclado() {
+  const ativo = document.activeElement
+  if (!(ativo instanceof HTMLElement)) return
+  if (ativo.matches('input, textarea, select, [contenteditable="true"]')) ativo.blur()
+}
+
 export function acompanharTeclado() {
   const vv = window.visualViewport
   if (!vv) return

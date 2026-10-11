@@ -21,6 +21,7 @@ import {
   textoDica,
   type FaixaAplicada,
 } from '@/lib/precos'
+import { fecharTeclado } from '@/lib/teclado'
 import { cn } from '@/lib/utils'
 import type { DadosEtiqueta, Item, ItemPatch, Lista, ResultadoCompra } from '@/types/app'
 
@@ -139,6 +140,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
 
   function confirmar() {
     if (qtd === null || preco === null || faixaAplicada === null || nome === null || !unidadeDefinida) return
+    fecharTeclado()
     const patch: ItemPatch = {
       comprado: true,
       unidade,
@@ -182,7 +184,10 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
           size="icon"
           aria-label="Descartar esta etiqueta"
           className="-mr-2 -mt-2 text-muted-foreground"
-          onClick={() => atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'descartado' } })}
+          onClick={() => {
+            fecharTeclado()
+            atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'descartado' } })
+          }}
         >
           <X className="size-5" />
         </Button>
@@ -275,7 +280,11 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
                   key={n}
                   type="button"
                   aria-pressed={escolhido}
-                  onClick={() => setQtdTexto(String(n).replace('.', ','))}
+                  onClick={() => {
+                    // Escolheu pelo botão: o campo "Outro" não precisa mais do teclado.
+                    fecharTeclado()
+                    setQtdTexto(String(n).replace('.', ','))
+                  }}
                   className={cn(
                     'dinheiro grid h-14 min-w-12 place-items-center rounded-full border px-3 text-[1.0625rem] font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-saida',
                     escolhido

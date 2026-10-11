@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
 import { useAtualizarCard } from '@/hooks/useMensagens'
 import { linhaCalculo } from '@/lib/precos'
+import { fecharTeclado } from '@/lib/teclado'
 import type { AcaoProposta, DadosProposta, Item } from '@/types/app'
 
 type PropostaCardProps = {
@@ -32,6 +33,7 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
   const pendente = dados.estado === 'pendente' && !somenteLeitura
 
   function confirmar() {
+    fecharTeclado()
     for (const acao of dados.acoes) {
       // O item pode ter sido removido pelo outro aparelho enquanto a proposta esperava.
       if (!itens.some((i) => i.id === acao.item_id)) continue
@@ -68,7 +70,15 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
       </ul>
       {pendente ? (
         <div className="mt-3.5 flex gap-2">
-          <Button variant="secondary" size="sm" className="flex-1" onClick={() => atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'cancelada' } })}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              fecharTeclado()
+              atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'cancelada' } })
+            }}
+          >
             Cancelar
           </Button>
           <Button size="sm" className="flex-1" onClick={confirmar}>

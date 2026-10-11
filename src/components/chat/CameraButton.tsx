@@ -1,5 +1,6 @@
 import { Camera } from 'lucide-react'
 import { useRef, type ChangeEvent } from 'react'
+import { fecharTeclado } from '@/lib/teclado'
 import { cn } from '@/lib/utils'
 
 type CameraButtonProps = { aoFotografar: (arquivo: File) => void; disabled?: boolean; className?: string }
@@ -35,7 +36,11 @@ export function CameraButton({ aoFotografar, disabled, className }: CameraButton
         type="button"
         aria-label="Fotografar etiqueta de preço"
         disabled={disabled}
-        onClick={() => entrada.current?.click()}
+        onClick={() => {
+          // Com o teclado aberto a câmera nativa abre espremida e volta com ele aberto.
+          fecharTeclado()
+          entrada.current?.click()
+        }}
         className={cn(
           'grid size-[3.25rem] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
           className,

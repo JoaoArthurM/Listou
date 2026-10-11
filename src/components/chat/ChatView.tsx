@@ -6,10 +6,12 @@ import { useUsuario } from '@/hooks/sessao'
 import { useConexao } from '@/hooks/useConexao'
 import { useMembros } from '@/hooks/useListas'
 import { useMensagens } from '@/hooks/useMensagens'
+import { useFrase } from '@/hooks/useFrase'
 import type { AoVivo } from '@/hooks/useRealtime'
 import { chaves, enviarAoChat, enviarVozAoChat } from '@/lib/api'
 import { avisar } from '@/lib/avisos'
 import { descartarFoto, fotografarEtiqueta, tentarFotoDeNovo, useFilaDeFotos } from '@/lib/filaDeFotos'
+import { fecharTeclado } from '@/lib/teclado'
 import { listarNomes, primeiroNome } from '@/lib/utils'
 import { gravar, vozDisponivel, type Gravacao } from '@/lib/voz'
 import type { Item, Lista } from '@/types/app'
@@ -52,6 +54,9 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
 
   const offline = estado === 'offline'
   const esperandoIA = pendentes.some((p) => p.erro === null) || fotos.some((f) => f.estado === 'lendo' || f.estado === 'preparando')
+  const lendoFoto = fotos.some((f) => f.estado === 'lendo' || f.estado === 'preparando')
+  const falando = pendentes.some((p) => p.erro === null && p.tipo === 'voz')
+  const frase = useFrase(!esperandoIA ? null : lendoFoto ? 'foto' : falando ? 'voz' : 'texto')
   const digitando = outros.filter((o) => o.digitando).map((o) => primeiroNome(o.nome) || 'Alguém')
   // A IA também "pensa" quando o pedido saiu do outro aparelho.
   const outrosEsperando = outros.filter((o) => o.esperandoIA).map((o) => primeiroNome(o.nome) || 'alguém')
@@ -119,6 +124,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const idsAtuais = () => mensagens?.map((m) => m.id) ?? []
 
   function enfileirar(pendente: Pendente) {
+    // Pedido enviado (texto, voz ou atalho): a conversa precisa de tela, não de teclado.
+    fecharTeclado()
     setPendentes((atuais) => [...atuais, pendente])
     void mandar(pendente)
   }
@@ -146,6 +153,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   }
 
   async function comecarAGravar() {
+    fecharTeclado()
     try {
       setGravacao(await gravar())
     } catch (erro) {
@@ -299,7 +307,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             <li className="animate-surge">
               <Digitando
                 lado="assistente"
-                texto={esperandoIA ? 'Listou está pensando' : `Listou está respondendo a ${listarNomes(outrosEsperando)}`}
+                texto={esperandoIA ? (frase ?? 'Listou está pensando…') : `Listou está respondendo a ${listarNomes(outrosEsperando)}`}
               />
             </li>
           ) : null}
@@ -342,7 +350,12 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             />
           ) : (
             <form onSubmit={enviar} className="flex items-center gap-2">
-              <CameraButton aoFotografar={(arquivo) => void fotografarEtiqueta(lista.id, usuario.id, arquivo)} />
+              <CameraButton
+                aoFotografar={(arquivo) => {
+                  fecharTeclado()
+                  void fotografarEtiqueta(lista.id, usuario.id, arquivo)
+                }}
+              />
               <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
                 <input
                   value={texto}
