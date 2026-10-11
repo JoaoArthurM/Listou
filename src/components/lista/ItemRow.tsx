@@ -8,6 +8,8 @@ import type { Item } from '@/types/app'
 type ItemRowProps = {
   item: Item
   somenteLeitura?: boolean
+  /** Nome de quem adicionou. Só vem quando a lista é dividida com alguém. */
+  quemAdicionou?: string | null
   aoAlternar: (item: Item) => void
   aoAbrir: (item: Item) => void
 }
@@ -25,10 +27,11 @@ function detalheDaCompra(item: Item): string | null {
 }
 
 /** Linha do checklist: círculo à esquerda marca, o resto da linha abre a edição. */
-export function ItemRow({ item, somenteLeitura = false, aoAlternar, aoAbrir }: ItemRowProps) {
+export function ItemRow({ item, somenteLeitura = false, quemAdicionou, aoAlternar, aoAbrir }: ItemRowProps) {
   // A animação do check só toca quando o usuário marca, não a cada vez que a lista é desenhada.
   const [recemMarcado, setRecemMarcado] = useState(false)
-  const detalhe = item.comprado ? (detalheDaCompra(item) ?? 'sem preço, fora do total') : null
+  const compra = item.comprado ? (detalheDaCompra(item) ?? 'sem preço') : null
+  const detalhe = [compra, quemAdicionou ? `${quemAdicionou} adicionou` : null].filter(Boolean).join(' · ') || null
   const planejado = item.qtd_planejada === null ? null : formatarQuantidade(item.qtd_planejada, item.unidade)
 
   return (

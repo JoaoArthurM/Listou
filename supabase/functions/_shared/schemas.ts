@@ -99,10 +99,24 @@ export function normalizarExtracao(extracao: Extracao, idsDaLista: string[]): Ex
 // chat
 // ---------------------------------------------------------------------------
 
-export const chatEntradaSchema = z.object({
-  lista_id: uuid,
-  mensagem: z.string().trim().min(1).max(1000),
-})
+// Áudio de até ~25 s em WAV mono 16 kHz dá perto de 1,1 MB em base64.
+const MAX_AUDIO_BASE64 = 1_600_000
+
+/** O pedido chega escrito (mensagem) ou falado (audio), nunca os dois. */
+export const chatEntradaSchema = z
+  .object({
+    lista_id: uuid,
+    mensagem: z.string().trim().min(1).max(1000).optional(),
+    audio: z
+      .object({
+        data: z.string().min(100).max(MAX_AUDIO_BASE64).regex(/^[A-Za-z0-9+/]+=*$/, 'áudio fora do formato base64'),
+        mime_type: z.enum(['audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/aac', 'audio/mp3']),
+      })
+      .optional(),
+  })
+  .refine((v) => (v.mensagem === undefined) !== (v.audio === undefined), {
+    message: 'envie mensagem ou audio, um dos dois',
+  })
 
 /** Ações permitidas (seção 6.2). "informar_quantidade" responde ao último card de etiqueta aberto (7.2.5). */
 export const acaoSchema = z.discriminatedUnion('tipo', [
@@ -113,7 +127,13 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
     unidade: unidade.optional(),
   }),
   z.object({ tipo: z.literal('remover_item'), item_id: uuid }),
-  z.object({ tipo: z.literal('marcar_comprado'), item_id: uuid, qtd: quantidade, preco_centavos: centavos }),
+  // Sem preço, só põe o item no carrinho (fica fora do total até alguém informar).
+  z.object({
+    tipo: z.literal('marcar_comprado'),
+    item_id: uuid,
+    qtd: quantidade.optional(),
+    preco_centavos: centavos.optional(),
+  }),
   z.object({ tipo: z.literal('desmarcar_comprado'), item_id: uuid }),
   z.object({ tipo: z.literal('consultar_faltantes') }),
   z.object({ tipo: z.literal('consultar_total') }),
@@ -135,8 +155,10 @@ function semNulos(valor: unknown): unknown {
  * campos que não se aplicam, então eles saem antes da validação. Ação inválida
  * é descartada (e contada), nunca "consertada".
  */
-export function interpretarAcoes(bruto: unknown): { acoes: Acao[]; descartadas: number } {
-  const lista = z.object({ acoes: z.array(z.unknown()) }).safeParse(bruto)
+export function interpretarAcoes(bruto: unknown): { acoes: Acao[]; descartadas: number; transcricao: string | null } {
+  const lista = z
+    .object({ acoes: z.array(z.unknown()), transcricao: z.string().trim().max(1000).nullish() })
+    .safeParse(bruto)
   if (!lista.success) throw new Error('resposta do modelo sem a lista de ações')
 
   const acoes: Acao[] = []
@@ -147,7 +169,8 @@ export function interpretarAcoes(bruto: unknown): { acoes: Acao[]; descartadas: 
     else descartadas += 1
   }
   descartadas += Math.max(0, lista.data.acoes.length - MAX_ACOES)
-  return { acoes, descartadas }
+  // Só existe quando o pedido veio falado: é o que a IA ouviu.
+  return { acoes, descartadas, transcricao: lista.data.transcricao || null }
 }
 
 // ---------------------------------------------------------------------------

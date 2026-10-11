@@ -146,6 +146,8 @@ group by lista_id;
 - **Privilégios por coluna:** o cliente só altera `dados` e `item_id` em `mensagens`; mensagens do assistente são gravadas pela Edge Function.
 - **Realtime:** além de `itens` e `mensagens`, a tabela `listas` está na publication (orçamento, cartões respondidos, finalização).
 - **Tabela `uso_ia`** ganhou a coluna `modelo`.
+- **Atividade ao vivo:** "digitando" e "pensando" não usam tabela. Vão por Realtime Broadcast no canal privado `lista:{lista_id}:atividade`; duas políticas em `realtime.messages` (migration `atividade_ao_vivo`) deixam só membros da lista ouvir e anunciar.
+- **Quem adicionou:** `itens.adicionado_por` tem `default auth.uid()`, então vale também para itens criados pela função `chat` (ela grava com o token do usuário).
 
 ---
 
@@ -259,6 +261,9 @@ type Acao =
 - Ações destrutivas (`remover_item`, `desmarcar_comprado`) e `marcar_comprado` via texto retornam como **proposta** para o usuário confirmar no app antes de executar.
 - Se a mensagem for ambígua (ex: "tira o leite" e existem 2 leites), a ação é `responder` pedindo esclarecimento.
 - Enviar ao modelo só o necessário: itens da lista (id, nome, unidade, comprado) e as últimas ~10 mensagens.
+- **Decisões (out/2026):**
+  - **Pedido falado.** A entrada aceita `audio: { data, mime_type }` (base64) no lugar de `mensagem`, nunca os dois. O áudio vai para o Gemini na mesma chamada, junto do contexto; a resposta traz `transcricao`, que a função grava como a mensagem do usuário, e as ações de sempre. O app grava no microfone, converte para WAV mono de 16 kHz e limita a 25 s (`src/lib/voz.ts`).
+  - **Marcar sem preço.** Em `marcar_comprado`, `qtd` e `preco_centavos` passaram a ser opcionais. Sem preço ("peguei o leite"), a função põe o item no carrinho na hora, igual a tocar no círculo: ele fica fora do total até alguém informar o preço. Com preço dito, continua sendo proposta para confirmar.
 - **Ação extra implementada:** `{ tipo: 'informar_quantidade'; qtd: number }`, usada quando o usuário responde por texto ao último card de etiqueta aberto ("levei 6", seção 7.2 passo 5). A faixa é escolhida por `precos.ts` e o item é gravado na hora, como se ele tivesse tocado em Adicionar.
 
 ### 6.3 Chamada ao Gemini
@@ -316,6 +321,12 @@ type Acao =
 - Persistir cache do React Query localmente (`@tanstack/query-sync-storage-persister` ou equivalente oficial).
 - Sem conexão: lista e marcações manuais funcionam e entram numa fila; foto mostra "sem conexão, tente de novo". Ao reconectar, sincroniza.
 - Indicador visível de status (online / offline / sincronizando).
+
+**Decisões (out/2026):**
+- **Conexão medida, não suposta.** `navigator.onLine` diz "online" em Wi-Fi sem internet. Uma sonda (`src/lib/conexao.ts`) chama `GET /auth/v1/health` a cada 20 s com a aba visível; duas falhas seguidas viram offline e põem as alterações na fila, e a primeira resposta reenvia a fila. O indicador (`StatusConexao`) mostra barras de sinal conforme a latência medida e pisca a cada resposta da sonda e a cada dado que chega pelo Realtime. Com o servidor respondendo mas o canal da lista fora, mostra "Reconectando".
+- **Dois canais por lista.** `lista:{id}` leva só as mudanças do banco. `lista:{id}:atividade` leva "digitando" e "pensando" por Broadcast, com repetição a cada 3 s enquanto dura e validade de 7 s em quem recebe (se o outro aparelho some, o aviso some junto). Não usar Presence para isso: o Realtime aceita 5 atualizações de Presence a cada 30 s por conexão e derruba o canal inteiro quando passa, levando a sincronização junto.
+- **Quem colocou o quê.** Com mais de um membro na lista, cada item mostra "Você adicionou" ou "Fulano adicionou" na linha e na folha de edição.
+- **Sem preço não trava.** Tocar no círculo marca o item sem pedir preço; ele aparece como "sem preço" e o rodapé conta quantos estão assim.
 
 ### 7.4 PWA
 

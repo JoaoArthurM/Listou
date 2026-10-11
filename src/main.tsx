@@ -6,11 +6,13 @@ import { App } from './App'
 import { SessaoProvider } from './components/SessaoProvider'
 import { Toaster } from './components/ui/toaster'
 import './index.css'
+import { iniciarSonda } from './lib/conexao'
 import { persistencia, queryClient } from './lib/queryClient'
 import { acompanharTeclado } from './lib/teclado'
 import './lib/tema'
 
 acompanharTeclado()
+iniciarSonda(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
 
 // Service worker do PWA: guarda o app para abrir sem conexão e se atualiza sozinho.
 registerSW({ immediate: true })

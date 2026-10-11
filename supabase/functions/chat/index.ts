@@ -3,13 +3,15 @@
 // banco e não faz conta: totais vêm do banco, e a escolha da faixa de preço
 // vem de precos.ts.
 //
-// - Adicionar item e consultas rodam na hora.
+// - Adicionar item, consultas e pôr um item no carrinho sem preço rodam na hora.
 // - Remover, desmarcar e marcar com preço voltam como proposta, que só é
 //   aplicada quando alguém confirma no app.
+// - O pedido pode vir escrito ou falado. Falado, o áudio vai junto para o
+//   Gemini, que devolve a transcrição e as ações na mesma chamada.
 
 import { autenticar, type Contexto } from '../_shared/auth.ts'
 import { formatarQuantidade, formatarReais, type Unidade } from '../_shared/dinheiro.ts'
-import { gerarJson, registrarUso, type RespostaGemini } from '../_shared/gemini.ts'
+import { gerarJson, registrarUso, type ParteDeEntrada, type RespostaGemini } from '../_shared/gemini.ts'
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
 import { calcularCompra, cartoesDesconhecidos, linhaCalculo, nomeCartao, normalizarCartao } from '../_shared/precos.ts'
 import { INSTRUCAO_CHAT, SCHEMA_CHAT } from '../_shared/prompts.ts'
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
 
     const entrada = chatEntradaSchema.safeParse(await req.json().catch(() => null))
     if (!entrada.success) return erro('Mensagem inválida.', 400)
-    const { lista_id, mensagem } = entrada.data
+    const { lista_id, mensagem, audio } = entrada.data
 
     // Só membro enxerga a lista (RLS, com o token do usuário).
     const { data: lista, error: erroLista } = await ctx.doUsuario
@@ -188,28 +190,36 @@ Deno.serve(async (req) => {
     const dadosDoCard = dadosEtiquetaSchema.safeParse(consultaCard.data[0]?.dados)
     const card = dadosDoCard.success ? { id: consultaCard.data[0]!.id as string, dados: dadosDoCard.data } : null
 
-    // A mensagem do usuário entra na conversa antes da chamada à IA: se a IA
-    // falhar, ela continua lá, seguida do aviso.
-    const { error: erroMensagem } = await ctx.doUsuario
-      .from('mensagens')
-      .insert({ lista_id, autor_id: ctx.usuarioId, papel: 'usuario', tipo: 'texto', conteudo: mensagem })
-    if (erroMensagem) throw erroMensagem
+    const gravarFala = async (conteudo: string) => {
+      const { error } = await ctx.doUsuario
+        .from('mensagens')
+        .insert({ lista_id, autor_id: ctx.usuarioId, papel: 'usuario', tipo: 'texto', conteudo })
+      if (error) throw error
+    }
+
+    // A mensagem escrita entra na conversa antes da chamada à IA: se a IA
+    // falhar, ela continua lá, seguida do aviso. A falada só existe como
+    // texto depois que a IA devolve a transcrição.
+    if (mensagem !== undefined) await gravarFala(mensagem)
+
+    const partes: ParteDeEntrada[] = [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          itens: itens.map(({ id, nome, unidade, comprado }) => ({ id, nome, unidade, comprado })),
+          conversa_recente: consultaHistorico.data.reverse().map((m) => ({ de: m.papel, texto: m.conteudo })),
+          card_aberto: card ? { produto: card.dados.extracao.produto, unidade: card.dados.extracao.unidade } : null,
+          mensagem: mensagem ?? null,
+        }),
+      },
+    ]
+    if (audio) partes.push({ type: 'audio', data: audio.data, mime_type: audio.mime_type })
 
     let resposta: RespostaGemini
     try {
       resposta = await gerarJson({
         instrucao: INSTRUCAO_CHAT,
-        entrada: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              itens: itens.map(({ id, nome, unidade, comprado }) => ({ id, nome, unidade, comprado })),
-              conversa_recente: consultaHistorico.data.reverse().map((m) => ({ de: m.papel, texto: m.conteudo })),
-              card_aberto: card ? { produto: card.dados.extracao.produto, unidade: card.dados.extracao.unidade } : null,
-              mensagem,
-            }),
-          },
-        ],
+        entrada: partes,
         schema: SCHEMA_CHAT,
       })
     } catch (e) {
@@ -225,6 +235,13 @@ Deno.serve(async (req) => {
       const lidas = interpretarAcoes(resposta.json)
       acoes = lidas.acoes
       naoEntendidas = lidas.descartadas
+      if (audio) {
+        if (!lidas.transcricao) {
+          await responder(ctx, lista_id, 'Não consegui entender o áudio. Tente de novo, mais perto do microfone.')
+          return json({ ok: false })
+        }
+        await gravarFala(lidas.transcricao)
+      }
     } catch (e) {
       console.error('chat: resposta fora do schema', e)
       await responder(ctx, lista_id, 'Não entendi o pedido. Pode dizer de outro jeito?')
@@ -235,6 +252,7 @@ Deno.serve(async (req) => {
     const novos: Array<{ lista_id: string; nome: string; unidade: Unidade; qtd_planejada: number | null }> = []
     const repetidos: string[] = []
     const propostas: AcaoProposta[] = []
+    const paraOCarrinho: Array<{ item: ItemDaLista; qtd: number | null }> = []
     const avisos: string[] = []
     const falas: string[] = []
     let qtdDoCard: number | null = null
@@ -274,15 +292,19 @@ Deno.serve(async (req) => {
         case 'marcar_comprado': {
           const item = porId.get(acao.item_id)
           if (!item) naoEntendidas += 1
-          else if (item.unidade === 'un' && !Number.isInteger(acao.qtd)) {
+          else if (item.comprado) avisos.push(`“${item.nome}” já está no carrinho.`)
+          else if (item.unidade === 'un' && acao.qtd !== undefined && !Number.isInteger(acao.qtd)) {
             avisos.push(`“${item.nome}” é vendido por unidade: diga um número inteiro.`)
+          } else if (acao.preco_centavos === undefined) {
+            // Sem preço não mexe no total: é o mesmo que tocar no círculo do item.
+            paraOCarrinho.push({ item, qtd: acao.qtd ?? item.qtd_planejada })
           } else {
             propostas.push({
               tipo: 'marcar_comprado',
               item_id: item.id,
               nome: item.nome,
               unidade: item.unidade,
-              qtd: acao.qtd,
+              qtd: acao.qtd ?? item.qtd_planejada ?? 1,
               preco_centavos: acao.preco_centavos,
             })
           }
@@ -312,6 +334,14 @@ Deno.serve(async (req) => {
       linhas.push(`Adicionei: ${novos.map(comQuantidade).join(', ')}.`)
     }
     if (repetidos.length > 0) linhas.push(`Já ${repetidos.length === 1 ? 'estava' : 'estavam'} na lista: ${repetidos.join(', ')}.`)
+
+    if (paraOCarrinho.length > 0) {
+      for (const { item, qtd } of paraOCarrinho) {
+        const { error } = await ctx.doUsuario.from('itens').update({ comprado: true, qtd_comprada: qtd }).eq('id', item.id)
+        if (error) throw error
+      }
+      linhas.push(`No carrinho, sem preço: ${paraOCarrinho.map((p) => p.item.nome).join(', ')}.`)
+    }
 
     if (qtdDoCard !== null) linhas.push(await aplicarQuantidade(ctx, lista, itens, card, qtdDoCard))
 

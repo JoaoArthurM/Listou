@@ -3,6 +3,7 @@ import { useId, useState } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useUsuario } from '@/hooks/sessao'
 import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
 import { useResponderCartao } from '@/hooks/useListas'
 import { useAtualizarCard } from '@/hooks/useMensagens'
@@ -57,6 +58,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
   const { extracao } = dados
   const { unidade, faixas } = extracao
   const idSelecao = useId()
+  const usuario = useUsuario()
   const adicionar = useAdicionarItem()
   const atualizar = useAtualizarItem()
   const atualizarCard = useAtualizarCard(lista.id)
@@ -102,7 +104,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
       foto_path: dados.foto_path,
     }
     if (itemDestino) atualizar.mutate({ id: itemDestino.id, lista_id: lista.id, patch })
-    else adicionar.mutate({ id: crypto.randomUUID(), lista_id: lista.id, nome, ...patch })
+    else adicionar.mutate({ id: crypto.randomUUID(), lista_id: lista.id, nome, adicionado_por: usuario.id, ...patch })
 
     atualizarCard.mutate({
       mensagemId,

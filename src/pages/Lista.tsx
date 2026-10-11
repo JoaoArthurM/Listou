@@ -9,8 +9,9 @@ import { ListaConfigSheet } from '@/components/lista/ListaConfigSheet'
 import { TotalBar } from '@/components/lista/TotalBar'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/segmented'
+import { useUsuario } from '@/hooks/sessao'
 import { useItens } from '@/hooks/useItens'
-import { useLista } from '@/hooks/useListas'
+import { useLista, usePerfil } from '@/hooks/useListas'
 import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
 import { navegar, voltar } from '@/lib/rota'
@@ -25,7 +26,9 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const { data: lista, isPending } = useLista(id)
   const { data: itens = [], isPending: carregandoItens } = useItens(id)
   const [opcoesAbertas, setOpcoesAbertas] = useState(false)
-  useRealtime(id)
+  const usuario = useUsuario()
+  const { data: perfil } = usePerfil()
+  const aoVivo = useRealtime(id, { id: usuario.id, nome: perfil?.nome ?? '' })
 
   const resumo = resumir(itens)
   const faltando = resumo.itens_total - resumo.itens_comprados
@@ -67,7 +70,15 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
     .join(' • ')
 
   return (
-    <Moldura rodape={<TotalBar resumo={resumo} orcamentoCentavos={lista.orcamento_centavos} />}>
+    <Moldura
+      rodape={
+        <TotalBar
+          resumo={resumo}
+          orcamentoCentavos={lista.orcamento_centavos}
+          semPreco={itens.filter((i) => i.comprado && i.total_centavos === null).length}
+        />
+      }
+    >
       <header className="shrink-0 px-3 pt-3">
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => voltar(finalizada ? '/historico' : '/')}>
@@ -106,7 +117,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
               },
             ]}
           />
-          <StatusConexao />
+          <StatusConexao canal={aoVivo.canal} />
         </div>
       </header>
 
@@ -120,7 +131,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
 
       <div className="flex min-h-0 flex-1 flex-col pt-3">
         {aba === 'chat' ? (
-          <ChatView lista={lista} itens={itens} somenteLeitura={finalizada} />
+          <ChatView lista={lista} itens={itens} aoVivo={aoVivo} somenteLeitura={finalizada} />
         ) : (
           <ItensView lista={lista} itens={itens} resumo={resumo} carregando={carregandoItens} somenteLeitura={finalizada} />
         )}

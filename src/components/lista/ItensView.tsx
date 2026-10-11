@@ -2,9 +2,11 @@ import { ChevronDown, Plus, ShoppingBasket, ShoppingCart, type LucideIcon } from
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
+import { useUsuario } from '@/hooks/sessao'
 import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
+import { useMembros } from '@/hooks/useListas'
 import { formatarReais } from '@/lib/dinheiro'
-import { cn, plural } from '@/lib/utils'
+import { cn, primeiroNome } from '@/lib/utils'
 import type { Item, Lista, Resumo } from '@/types/app'
 import { ItemRow } from './ItemRow'
 import { ItemSheet } from './ItemSheet'
@@ -42,6 +44,8 @@ function Secao({ titulo, icone: Icone, contagem, children }: SecaoProps) {
 export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: ItensViewProps) {
   const adicionar = useAdicionarItem()
   const atualizar = useAtualizarItem()
+  const usuario = useUsuario()
+  const { data: membros = [] } = useMembros(lista.id)
   const [novo, setNovo] = useState('')
   const [editando, setEditando] = useState<string | null>(null)
   const [recemAdicionado, setRecemAdicionado] = useState<string | null>(null)
@@ -49,9 +53,16 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
 
   const faltando = itens.filter((i) => !i.comprado)
   const noCarrinho = itens.filter((i) => i.comprado)
-  const semPreco = noCarrinho.filter((i) => i.total_centavos === null).length
   const itemEmEdicao = itens.find((i) => i.id === editando) ?? null
   const estouro = lista.orcamento_centavos === null ? 0 : resumo.total_centavos - lista.orcamento_centavos
+
+  // Quem pôs cada item só aparece quando a lista é dividida com alguém.
+  const compartilhada = membros.length > 1
+  const quemAdicionou = (item: Item): string | null => {
+    if (!compartilhada || !item.adicionado_por) return null
+    if (item.adicionado_por === usuario.id) return 'Você'
+    return primeiroNome(membros.find((m) => m.perfil_id === item.adicionado_por)?.nome) || null
+  }
 
   useEffect(() => {
     if (!recemAdicionado) return
@@ -63,7 +74,7 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
     const nome = novo.trim()
     if (!nome) return
     const id = crypto.randomUUID()
-    adicionar.mutate({ id, lista_id: lista.id, nome })
+    adicionar.mutate({ id, lista_id: lista.id, nome, adicionado_por: usuario.id })
     setRecemAdicionado(id)
     setNovo('')
   }
@@ -74,18 +85,18 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
   }
 
   const linha = (item: Item) => (
-    <ItemRow key={item.id} item={item} somenteLeitura={somenteLeitura} aoAlternar={alternar} aoAbrir={(i) => setEditando(i.id)} />
+    <ItemRow
+      key={item.id}
+      item={item}
+      somenteLeitura={somenteLeitura}
+      quemAdicionou={quemAdicionou(item)}
+      aoAlternar={alternar}
+      aoAbrir={(i) => setEditando(i.id)}
+    />
   )
 
   let aviso: ReactNode = null
   if (estouro > 0) aviso = <>O carrinho passou {formatarReais(estouro)} do orçamento.</>
-  else if (semPreco > 0)
-    aviso = (
-      <>
-        {plural(semPreco, 'item no carrinho está', 'itens no carrinho estão')} sem preço e não {semPreco === 1 ? 'entra' : 'entram'} no total.
-        Toque no item para informar.
-      </>
-    )
   else if (!somenteLeitura && itens.length > 0 && faltando.length === 0)
     aviso = <>Tudo no carrinho. Quando passar no caixa, finalize a compra nas opções da lista.</>
 
@@ -142,7 +153,14 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
       )}
 
       {itemEmEdicao ? (
-        <ItemSheet key={itemEmEdicao.id} item={itemEmEdicao} lista={lista} somenteLeitura={somenteLeitura} aoFechar={() => setEditando(null)} />
+        <ItemSheet
+          key={itemEmEdicao.id}
+          item={itemEmEdicao}
+          lista={lista}
+          quemAdicionou={quemAdicionou(itemEmEdicao)}
+          somenteLeitura={somenteLeitura}
+          aoFechar={() => setEditando(null)}
+        />
       ) : null}
     </>
   )

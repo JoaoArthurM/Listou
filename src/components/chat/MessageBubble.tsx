@@ -1,9 +1,8 @@
-import { ImageOff } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useFotoUrl } from '@/hooks/useMensagens'
 import { cn } from '@/lib/utils'
 import type { Item, Lista, Mensagem } from '@/types/app'
 import { ConfirmCard } from './ConfirmCard'
+import { FotoArmazenada } from './Foto'
 import { PropostaCard } from './PropostaCard'
 
 type BalaoProps = {
@@ -23,7 +22,9 @@ const estilos = {
 /** Balão de texto do chat. */
 export function Balao({ lado, autor, children, className }: BalaoProps) {
   return (
-    <div className={cn('flex flex-col', lado === 'eu' ? 'items-end' : 'items-start')}>
+    // w-full: dentro de um pai flex o balão encolheria até o texto e os 85% de
+    // largura máxima passariam a valer sobre esse tamanho encolhido.
+    <div className={cn('flex w-full flex-col', lado === 'eu' ? 'items-end' : 'items-start')}>
       {autor ? <span className="mb-1 px-3 text-xs text-muted-foreground">{autor}</span> : null}
       <div
         className={cn(
@@ -38,28 +39,25 @@ export function Balao({ lado, autor, children, className }: BalaoProps) {
   )
 }
 
-/** Miniatura da etiqueta. A foto some do servidor 24h depois da compra; aí fica só o marcador. */
-export function FotoEtiqueta({ src, children, alt = 'Foto da etiqueta' }: { src: string | null; children?: ReactNode; alt?: string }) {
-  if (!src) {
-    return (
-      <p className="flex h-9 items-center gap-2 rounded-full bg-muted px-3.5 text-sm text-muted-foreground">
-        <ImageOff aria-hidden className="size-4" />
-        Foto da etiqueta apagada
-      </p>
-    )
-  }
+/** Três pontos em onda: alguém está escrevendo ou a IA está pensando. */
+export function Pontos({ className }: { className?: string }) {
   return (
-    <div className="relative size-40 overflow-hidden rounded-3xl bg-muted shadow-cartao">
-      <img src={src} alt={alt} className="size-full object-cover" />
-      {children}
-    </div>
+    <span aria-hidden className={cn('inline-flex items-end gap-1', className)}>
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="size-1.5 animate-onda rounded-full bg-current" style={{ animationDelay: `${i * 140}ms` }} />
+      ))}
+    </span>
   )
 }
 
-function FotoDaMensagem({ caminho }: { caminho: string }) {
-  const { data: url, isPending } = useFotoUrl(caminho)
-  if (isPending) return <div aria-hidden className="size-40 animate-pulso rounded-3xl bg-muted" />
-  return <FotoEtiqueta src={url ?? null} />
+/** Balão de "digitando" ou "pensando", com quem e o quê ao lado dos pontos. */
+export function Digitando({ lado, texto }: { lado: 'outro' | 'assistente'; texto: string }) {
+  return (
+    <Balao lado={lado} className="flex min-h-11 items-center gap-2.5 text-[0.9375rem] text-muted-foreground">
+      <Pontos className={lado === 'assistente' ? 'text-primary' : undefined} />
+      <span role="status">{texto}</span>
+    </Balao>
+  )
 }
 
 type MessageBubbleProps = {
@@ -94,7 +92,7 @@ export function MessageBubble({ mensagem, lista, itens, minha, autor, somenteLei
     return (
       <div className={cn('flex flex-col', minha ? 'items-end' : 'items-start')}>
         {autor ? <span className="mb-1 px-3 text-xs text-muted-foreground">{autor}</span> : null}
-        <FotoDaMensagem caminho={dados.foto_path} />
+        <FotoArmazenada caminho={dados.foto_path} />
       </div>
     )
   }

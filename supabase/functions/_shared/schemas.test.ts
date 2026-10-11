@@ -166,6 +166,21 @@ describe('entradas das funções', () => {
     expect(chatEntradaSchema.safeParse({ lista_id: LISTA, mensagem: 'x'.repeat(1001) }).success).toBe(false)
     expect(chatEntradaSchema.safeParse({ mensagem: 'oi' }).success).toBe(false)
   })
+
+  it('chat aceita pedido falado no lugar do escrito, nunca os dois nem nenhum', () => {
+    const audio = { data: 'UklGRg'.repeat(40), mime_type: 'audio/wav' }
+    expect(chatEntradaSchema.safeParse({ lista_id: LISTA, audio }).success).toBe(true)
+    expect(chatEntradaSchema.safeParse({ lista_id: LISTA, audio, mensagem: 'oi' }).success).toBe(false)
+    expect(chatEntradaSchema.safeParse({ lista_id: LISTA }).success).toBe(false)
+  })
+
+  it('chat rejeita áudio que não é base64, tipo desconhecido e áudio grande demais', () => {
+    const com = (audio: unknown) => chatEntradaSchema.safeParse({ lista_id: LISTA, audio }).success
+    expect(com({ data: 'isto não é base64 !!'.repeat(10), mime_type: 'audio/wav' })).toBe(false)
+    expect(com({ data: 'UklGRg'.repeat(40), mime_type: 'video/mp4' })).toBe(false)
+    expect(com({ data: 'A'.repeat(1_600_001), mime_type: 'audio/wav' })).toBe(false)
+    expect(com({ data: 'UklGRg', mime_type: 'audio/wav' })).toBe(false) // curto demais para ser fala
+  })
 })
 
 describe('acaoSchema (resposta do Gemini em chat)', () => {
@@ -174,6 +189,9 @@ describe('acaoSchema (resposta do Gemini em chat)', () => {
     { tipo: 'adicionar_item', nome: 'Pão' },
     { tipo: 'remover_item', item_id: ITEM },
     { tipo: 'marcar_comprado', item_id: ITEM, qtd: 2, preco_centavos: 499 },
+    // "peguei o leite": vai para o carrinho sem preço e sem quantidade.
+    { tipo: 'marcar_comprado', item_id: ITEM },
+    { tipo: 'marcar_comprado', item_id: ITEM, qtd: 2 },
     { tipo: 'desmarcar_comprado', item_id: ITEM },
     { tipo: 'consultar_faltantes' },
     { tipo: 'consultar_total' },
@@ -188,7 +206,6 @@ describe('acaoSchema (resposta do Gemini em chat)', () => {
     [{ tipo: 'adicionar_item', nome: '   ' }, 'nome vazio'],
     [{ tipo: 'remover_item' }, 'sem item_id'],
     [{ tipo: 'remover_item', item_id: 'arroz' }, 'item_id que não é uuid'],
-    [{ tipo: 'marcar_comprado', item_id: ITEM, qtd: 2 }, 'sem preço'],
     [{ tipo: 'marcar_comprado', item_id: ITEM, qtd: 2, preco_centavos: -499 }, 'preço negativo'],
     [{ tipo: 'marcar_comprado', item_id: ITEM, qtd: 2, preco_centavos: '4,99' }, 'preço como string'],
     [{ tipo: 'marcar_comprado', item_id: ITEM, qtd: 0, preco_centavos: 499 }, 'quantidade zero'],
@@ -226,6 +243,15 @@ describe('interpretarAcoes', () => {
     const { acoes, descartadas } = interpretarAcoes({ acoes: muitas })
     expect(acoes).toHaveLength(12)
     expect(descartadas).toBe(8)
+  })
+
+  it('devolve a transcrição quando o pedido veio falado', () => {
+    const falado = interpretarAcoes({ transcricao: ' Peguei o detergente. ', acoes: [{ tipo: 'marcar_comprado', item_id: ITEM, qtd: null, preco_centavos: null }] })
+    expect(falado.transcricao).toBe('Peguei o detergente.')
+    expect(falado.acoes).toEqual([{ tipo: 'marcar_comprado', item_id: ITEM }])
+    expect(interpretarAcoes({ transcricao: null, acoes: [] }).transcricao).toBeNull()
+    expect(interpretarAcoes({ transcricao: '', acoes: [] }).transcricao).toBeNull()
+    expect(interpretarAcoes({ acoes: [] }).transcricao).toBeNull()
   })
 
   it('recusa resposta que não tem a lista de ações', () => {

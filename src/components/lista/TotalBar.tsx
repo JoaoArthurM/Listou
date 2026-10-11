@@ -2,14 +2,14 @@ import { formatarReais } from '@/lib/dinheiro'
 import { cn, plural } from '@/lib/utils'
 import type { Resumo } from '@/types/app'
 
-type TotalBarProps = { resumo: Resumo; orcamentoCentavos: number | null }
+type TotalBarProps = { resumo: Resumo; orcamentoCentavos: number | null; semPreco?: number }
 
 /**
  * Total do carrinho e progresso, fixos na faixa preta do rodapé. Os números
  * vêm dos itens em cache, somados em código (nunca pela IA), e mudam nos dois
  * aparelhos via Realtime.
  */
-export function TotalBar({ resumo, orcamentoCentavos }: TotalBarProps) {
+export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0 }: TotalBarProps) {
   const { total_centavos, itens_comprados, itens_total } = resumo
   const saldo = orcamentoCentavos === null ? null : orcamentoCentavos - total_centavos
   const percentual = itens_total > 0 ? Math.round((itens_comprados / itens_total) * 100) : 0
@@ -27,9 +27,14 @@ export function TotalBar({ resumo, orcamentoCentavos }: TotalBarProps) {
           <p className="dinheiro text-[0.9375rem]">
             {itens_comprados} de {plural(itens_total, 'item', 'itens')}
           </p>
-          {saldo !== null ? (
-            <p className={cn('dinheiro mt-0.5 text-[0.8125rem]', saldo < 0 ? 'text-destaque' : 'text-moldura-muted')}>
-              {saldo < 0 ? `passou ${formatarReais(-saldo)}` : `restam ${formatarReais(saldo)}`}
+          {saldo !== null || semPreco > 0 ? (
+            <p className={cn('dinheiro mt-0.5 text-[0.8125rem]', saldo !== null && saldo < 0 ? 'text-destaque' : 'text-moldura-muted')}>
+              {[
+                saldo === null ? null : saldo < 0 ? `passou ${formatarReais(-saldo)}` : `restam ${formatarReais(saldo)}`,
+                semPreco > 0 ? `${semPreco} sem preço` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </p>
           ) : null}
         </div>

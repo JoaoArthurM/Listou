@@ -18,6 +18,7 @@ const ESPERA_ANTES_DE_REPETIR_MS = 800
 export type ParteDeEntrada =
   | { type: 'text'; text: string }
   | { type: 'image'; data: string; mime_type: string }
+  | { type: 'audio'; data: string; mime_type: string }
 
 export type RespostaGemini = { json: unknown; modelo: string; tokensEntrada: number; tokensSaida: number }
 

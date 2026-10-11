@@ -41,12 +41,12 @@ function itemOtimista(novo: NovoItem): Item {
     total_centavos: null,
     foto_path: null,
     origem_preco: null,
-    adicionado_por: null,
+    adicionado_por: novo.adicionado_por ?? null,
     comprado_por: null,
     comprado_em: null,
     criado_em: new Date().toISOString(),
   }
-  const { id: _id, lista_id: _lista, ...patch } = novo
+  const { id: _id, lista_id: _lista, adicionado_por: _quem, ...patch } = novo
   return aplicarPatch(base, patch)
 }
 

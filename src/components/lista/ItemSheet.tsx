@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { FotoArmazenada } from '@/components/chat/Foto'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
@@ -9,13 +10,20 @@ import { formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type
 import { escolherFaixa, linhaCalculo, linhaFaixas } from '@/lib/precos'
 import type { Item, ItemPatch, Lista } from '@/types/app'
 
-type ItemSheetProps = { item: Item; lista: Lista; somenteLeitura?: boolean; aoFechar: () => void }
+type ItemSheetProps = {
+  item: Item
+  lista: Lista
+  /** Nome de quem adicionou; só vem quando a lista é dividida com alguém. */
+  quemAdicionou?: string | null
+  somenteLeitura?: boolean
+  aoFechar: () => void
+}
 
 const textoQtd = (qtd: number | null, unidade: Unidade) =>
   qtd === null ? '' : formatarQuantidade(qtd, unidade).replace(' kg', '')
 
 /** Edição rápida de um item: nome, unidade, quantidade e, se já está no carrinho, o preço. */
-export function ItemSheet({ item, lista, somenteLeitura = false, aoFechar }: ItemSheetProps) {
+export function ItemSheet({ item, lista, quemAdicionou, somenteLeitura = false, aoFechar }: ItemSheetProps) {
   const atualizar = useAtualizarItem()
   const remover = useRemoverItem()
 
@@ -82,7 +90,12 @@ export function ItemSheet({ item, lista, somenteLeitura = false, aoFechar }: Ite
   const rotuloQtd = unidade === 'kg' ? 'Peso (kg)' : 'Quantidade'
 
   return (
-    <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title={somenteLeitura ? item.nome : 'Editar item'}>
+    <Sheet
+      open
+      onOpenChange={(aberta) => !aberta && aoFechar()}
+      title={somenteLeitura ? item.nome : 'Editar item'}
+      description={quemAdicionou ? `${quemAdicionou} adicionou este item.` : undefined}
+    >
       <form onSubmit={salvar} className="space-y-4" noValidate>
         <fieldset disabled={somenteLeitura} className="space-y-4">
           <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={80} autoComplete="off" />
@@ -162,6 +175,13 @@ export function ItemSheet({ item, lista, somenteLeitura = false, aoFechar }: Ite
             />
           )}
         </fieldset>
+
+        {item.foto_path ? (
+          <div>
+            <p className="mb-1.5 text-[0.9375rem] font-medium">Etiqueta fotografada</p>
+            <FotoArmazenada caminho={item.foto_path} className="size-24 rounded-2xl" />
+          </div>
+        ) : null}
 
         {erro ? (
           <p role="alert" className="text-sm text-destructive">

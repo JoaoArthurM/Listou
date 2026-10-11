@@ -76,6 +76,17 @@ export default {
           '0%, 100%': { opacity: '0.35' },
           '50%': { opacity: '1' },
         },
+        // Pontos de "digitando": sobem um de cada vez.
+        onda: {
+          '0%, 60%, 100%': { transform: 'translateY(0)', opacity: '0.45' },
+          '30%': { transform: 'translateY(-4px)', opacity: '1' },
+        },
+        // Barras de sinal: piscam uma vez a cada sinal de vida da conexão.
+        sinal: {
+          '0%': { opacity: '0.3', transform: 'scaleY(0.6)' },
+          '60%': { opacity: '1', transform: 'scaleY(1.15)' },
+          '100%': { opacity: '1', transform: 'scaleY(1)' },
+        },
         varredura: {
           from: { transform: 'translateY(-100%)' },
           to: { transform: 'translateY(100%)' },
@@ -87,6 +98,8 @@ export default {
         surge: 'surge 320ms cubic-bezier(0.16, 1, 0.3, 1) both',
         marcar: 'marcar 320ms cubic-bezier(0.16, 1, 0.3, 1)',
         pulso: 'pulso 1.2s ease-in-out infinite',
+        onda: 'onda 1.1s ease-in-out infinite',
+        sinal: 'sinal 520ms cubic-bezier(0.16, 1, 0.3, 1) both',
         varredura: 'varredura 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
       },
     },

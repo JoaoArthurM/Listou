@@ -247,6 +247,8 @@ export type NovoItem = {
   nome: string
   unidade?: Unidade
   qtd_planejada?: number | null
+  /** Quem adicionou; vai junto para a tela já mostrar o nome antes de o servidor responder. */
+  adicionado_por?: string
 } & ItemPatch
 
 export async function inserirItem(novo: NovoItem): Promise<void> {
@@ -312,6 +314,14 @@ async function mensagemDeErro(erro: unknown, padrao: string): Promise<string> {
 export async function enviarAoChat(listaId: string, mensagem: string): Promise<void> {
   const { error } = await supabase.functions.invoke('chat', { body: { lista_id: listaId, mensagem } })
   if (error) throw new ErroDoApp(await mensagemDeErro(error, 'Não consegui enviar. Tente de novo.'))
+}
+
+/** Pedido falado: o áudio (WAV em base64) vai para a mesma função, que devolve a transcrição como mensagem. */
+export async function enviarVozAoChat(listaId: string, audioBase64: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('chat', {
+    body: { lista_id: listaId, audio: { data: audioBase64, mime_type: 'audio/wav' } },
+  })
+  if (error) throw new ErroDoApp(await mensagemDeErro(error, 'Não consegui enviar o áudio. Tente de novo.'))
 }
 
 export async function enviarFoto(listaId: string, foto: Blob): Promise<string> {
