@@ -19,7 +19,7 @@ npm run dev               # http://localhost:5173
 | `npm run dev` | servidor de desenvolvimento |
 | `npm run build` | `tsc --noEmit` e build de produção (com service worker) |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest: dinheiro, faixas de preço e schemas das Edge Functions |
+| `npm test` | Vitest: dinheiro, faixas de preço, schemas das Edge Functions, seções, importação, previsão e resumo |
 | `npm run sync:shared` | copia `src/lib/{dinheiro,precos,leitura}.ts` para as Edge Functions |
 | `npm run icones` | regenera os ícones do PWA em `public/` |
 
@@ -70,9 +70,16 @@ Importe o repositório na Vercel (framework Vite, já descrito em `vercel.json`)
 
 ## Offline
 
-Listas, itens e conversa ficam em cache no aparelho (React Query persistido). Sem conexão, adicionar, marcar e editar itens funciona e entra numa fila que é reenviada quando o sinal volta, mesmo depois de fechar o app. Chat, voz e foto de etiqueta precisam de conexão.
+Listas, itens e conversa ficam em cache no aparelho (React Query persistido). Sem conexão, adicionar, marcar e editar itens funciona e entra numa fila que é reenviada quando o sinal volta, mesmo depois de fechar o app. Foto de etiqueta também: ela fica guardada no aparelho (`src/lib/filaDeFotos.ts`) e é lida sozinha quando a conexão volta. Texto e voz do chat precisam de conexão.
 
 O indicador ao lado das abas mostra a conexão medida, não a que o navegador supõe: uma sonda pergunta ao Supabase a cada 20 s se ele responde (`src/lib/conexao.ts`). As barras refletem o tempo de resposta e piscam a cada resposta e a cada dado que chega do outro aparelho. Duas sondas sem resposta viram "Offline", mesmo com Wi-Fi conectado.
+
+## Lista por seção, preço da última vez e importação
+
+- **Seções.** O que falta comprar aparece agrupado por seção do mercado, na ordem do caminho da loja. A seção sai do nome do item, por uma tabela de palavras (`src/lib/secoes.ts`); o que a tabela não conhece vai para "Outros", e dá para escolher a seção certa na folha do item.
+- **Da última vez.** Cada item mostra quanto custou na compra anterior de mesmo nome, e o app soma uma previsão do que falta (`src/lib/previsao.ts`). O nome precisa ser igual (sem ligar para acento e maiúscula): "Café" não herda o preço de "Café solúvel".
+- **Importar.** O botão ao lado do campo "Adicionar item" traz itens de um texto colado ou de outra lista, inclusive de uma compra finalizada (`src/lib/importar.ts`).
+- **Resumo ao finalizar.** Antes de fechar a compra o app mostra o total, a economia do atacado e do cartão, e o que ficou sem preço ou sem comprar (`src/lib/resumo.ts`).
 
 ## Leitura de etiqueta
 

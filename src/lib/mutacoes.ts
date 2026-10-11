@@ -7,23 +7,25 @@
 
 import type { QueryClient } from '@tanstack/react-query'
 import type { Item, ItemPatch } from '@/types/app'
-import { aplicarPatch, atualizarItem, chaves, ErroDoApp, inserirItem, removerItem, type NovoItem } from './api'
+import { aplicarPatch, atualizarItem, chaves, ErroDoApp, inserirItem, inserirItens, removerItem, type NovoItem } from './api'
 import { avisar } from './avisos'
 
 export const MUTACAO_ITENS = ['itens'] as const
 export const MUTACAO = {
   adicionar: ['itens', 'adicionar'],
+  adicionarVarios: ['itens', 'adicionar-varios'],
   atualizar: ['itens', 'atualizar'],
   remover: ['itens', 'remover'],
 } as const
 
 export type AtualizarItemVars = { id: string; lista_id: string; patch: ItemPatch }
 export type RemoverItemVars = { id: string; lista_id: string }
+export type AdicionarItensVars = { lista_id: string; itens: NovoItem[] }
 
 // Erro com código veio do banco (RLS, check constraint): repetir não resolve.
 // Sem código é rede ruim de supermercado: vale tentar de novo.
 function tentarDeNovo(tentativas: number, erro: Error): boolean {
-  return tentativas < 3 && !(erro instanceof ErroDoApp && erro.codigo)
+  return tentativas < 3 && !(erro instanceof ErroDoApp && erro.codigo && erro.codigo !== 'rede')
 }
 
 function itemOtimista(novo: NovoItem): Item {
@@ -41,6 +43,7 @@ function itemOtimista(novo: NovoItem): Item {
     total_centavos: null,
     foto_path: null,
     origem_preco: null,
+    secao: novo.secao ?? null,
     adicionado_por: novo.adicionado_por ?? null,
     comprado_por: null,
     comprado_em: null,
@@ -81,6 +84,18 @@ export function registrarMutacoes(queryClient: QueryClient) {
       ),
     onError: (erro: Error) => avisar(erro.message, 'erro'),
     onSettled: (_dados: unknown, _erro: unknown, novo: NovoItem) => reconciliar(novo.lista_id),
+  })
+
+  queryClient.setMutationDefaults<void, Error, AdicionarItensVars, void>(MUTACAO.adicionarVarios, {
+    ...comuns,
+    mutationFn: ({ itens }: AdicionarItensVars) => inserirItens(itens),
+    onMutate: ({ lista_id, itens: novos }: AdicionarItensVars) =>
+      editarCache(lista_id, (itens) => {
+        const presentes = new Set(itens.map((i) => i.id))
+        return [...itens, ...novos.filter((n) => !presentes.has(n.id)).map(itemOtimista)]
+      }),
+    onError: (erro: Error) => avisar(erro.message, 'erro'),
+    onSettled: (_dados: unknown, _erro: unknown, vars: AdicionarItensVars) => reconciliar(vars.lista_id),
   })
 
   queryClient.setMutationDefaults<void, Error, AtualizarItemVars, void>(MUTACAO.atualizar, {

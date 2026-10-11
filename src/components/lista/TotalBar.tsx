@@ -2,14 +2,20 @@ import { formatarReais } from '@/lib/dinheiro'
 import { cn, plural } from '@/lib/utils'
 import type { Resumo } from '@/types/app'
 
-type TotalBarProps = { resumo: Resumo; orcamentoCentavos: number | null; semPreco?: number }
+type TotalBarProps = {
+  resumo: Resumo
+  orcamentoCentavos: number | null
+  semPreco?: number
+  /** Carrinho mais o que falta, pelo preço da última compra. Null quando não há preço anterior de nada que falta. */
+  previstoCentavos?: number | null
+}
 
 /**
  * Total do carrinho e progresso, fixos na faixa preta do rodapé. Os números
  * vêm dos itens em cache, somados em código (nunca pela IA), e mudam nos dois
  * aparelhos via Realtime.
  */
-export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0 }: TotalBarProps) {
+export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCentavos = null }: TotalBarProps) {
   const { total_centavos, itens_comprados, itens_total } = resumo
   const saldo = orcamentoCentavos === null ? null : orcamentoCentavos - total_centavos
   const percentual = itens_total > 0 ? Math.round((itens_comprados / itens_total) * 100) : 0
@@ -18,7 +24,9 @@ export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0 }: TotalBarPr
     <section aria-label="Total do carrinho" className="text-moldura-foreground">
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[0.8125rem] text-moldura-muted">Carrinho</p>
+          <p className="dinheiro text-[0.8125rem] text-moldura-muted">
+            Carrinho{previstoCentavos === null ? null : ` · previsão ${formatarReais(previstoCentavos)}`}
+          </p>
           <p aria-live="polite" className="dinheiro mt-0.5 text-[1.875rem] font-semibold leading-none tracking-[-0.03em]">
             {formatarReais(total_centavos)}
           </p>

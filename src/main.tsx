@@ -7,12 +7,14 @@ import { SessaoProvider } from './components/SessaoProvider'
 import { Toaster } from './components/ui/toaster'
 import './index.css'
 import { iniciarSonda } from './lib/conexao'
+import { iniciarFilaDeFotos } from './lib/filaDeFotos'
 import { persistencia, queryClient } from './lib/queryClient'
 import { acompanharTeclado } from './lib/teclado'
 import './lib/tema'
 
 acompanharTeclado()
 iniciarSonda(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+iniciarFilaDeFotos()
 
 // Service worker do PWA: guarda o app para abrir sem conexão e se atualiza sozinho.
 registerSW({ immediate: true })

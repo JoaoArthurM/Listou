@@ -10,10 +10,13 @@ import { TotalBar } from '@/components/lista/TotalBar'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/segmented'
 import { useUsuario } from '@/hooks/sessao'
-import { useItens } from '@/hooks/useItens'
+import { useItens, usePrecosAnteriores } from '@/hooks/useItens'
 import { useLista, usePerfil } from '@/hooks/useListas'
 import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
+import { formatarReais } from '@/lib/dinheiro'
+import { preverFaltantes } from '@/lib/previsao'
+import { resumirCompra } from '@/lib/resumo'
 import { navegar, voltar } from '@/lib/rota'
 import { plural } from '@/lib/utils'
 
@@ -29,6 +32,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const usuario = useUsuario()
   const { data: perfil } = usePerfil()
   const aoVivo = useRealtime(id, { id: usuario.id, nome: perfil?.nome ?? '' })
+  const precos = usePrecosAnteriores(id)
 
   const resumo = resumir(itens)
   const faltando = resumo.itens_total - resumo.itens_comprados
@@ -62,6 +66,9 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   }
 
   const finalizada = lista.status === 'finalizada'
+  // Carrinho mais o que falta, pelo preço da última compra de cada item.
+  const previsao = preverFaltantes(itens, precos)
+  const economia = finalizada ? resumirCompra(itens).economia.total : 0
   const subtitulo = [
     `${resumo.itens_comprados} de ${plural(resumo.itens_total, 'item', 'itens')}`,
     lista.mercado,
@@ -76,6 +83,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
           resumo={resumo}
           orcamentoCentavos={lista.orcamento_centavos}
           semPreco={itens.filter((i) => i.comprado && i.total_centavos === null).length}
+          previstoCentavos={!finalizada && previsao.comPreco > 0 ? resumo.total_centavos + previsao.centavos : null}
         />
       }
     >
@@ -124,7 +132,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
       {finalizada ? (
         <div className="shrink-0 px-4 pt-3">
           <Dica>
-            Compra finalizada{lista.finalizada_em ? ` em ${dataCurta.format(new Date(lista.finalizada_em))}` : ''}. Para mexer nela de novo, reabra nas opções.
+            Compra finalizada{lista.finalizada_em ? ` em ${dataCurta.format(new Date(lista.finalizada_em))}` : ''}.
+            {economia > 0 ? ` Atacado e cartão economizaram ${formatarReais(economia)}.` : ''} Para mexer nela de novo, reabra nas opções.
           </Dica>
         </div>
       ) : null}
@@ -133,11 +142,11 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         {aba === 'chat' ? (
           <ChatView lista={lista} itens={itens} aoVivo={aoVivo} somenteLeitura={finalizada} />
         ) : (
-          <ItensView lista={lista} itens={itens} resumo={resumo} carregando={carregandoItens} somenteLeitura={finalizada} />
+          <ItensView lista={lista} itens={itens} resumo={resumo} precos={precos} carregando={carregandoItens} somenteLeitura={finalizada} />
         )}
       </div>
 
-      {opcoesAbertas ? <ListaConfigSheet lista={lista} aoFechar={() => setOpcoesAbertas(false)} /> : null}
+      {opcoesAbertas ? <ListaConfigSheet lista={lista} itens={itens} aoFechar={() => setOpcoesAbertas(false)} /> : null}
     </Moldura>
   )
 }

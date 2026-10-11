@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { buscarItens, chaves, type NovoItem } from '@/lib/api'
-import { MUTACAO, type AtualizarItemVars, type RemoverItemVars } from '@/lib/mutacoes'
+import { useMemo } from 'react'
+import { buscarComprasPassadas, buscarItens, chaves, type NovoItem } from '@/lib/api'
+import { MUTACAO, type AdicionarItensVars, type AtualizarItemVars, type RemoverItemVars } from '@/lib/mutacoes'
+import { precosAnteriores, type PrecoAnterior } from '@/lib/previsao'
 
 export function useItens(listaId: string) {
   return useQuery({ queryKey: chaves.itens(listaId), queryFn: () => buscarItens(listaId) })
@@ -11,6 +13,19 @@ export function useItens(listaId: string) {
 
 export function useAdicionarItem() {
   return useMutation<void, Error, NovoItem>({ mutationKey: MUTACAO.adicionar })
+}
+
+/** Vários itens num pedido só (importação). */
+export function useAdicionarItens() {
+  return useMutation<void, Error, AdicionarItensVars>({ mutationKey: MUTACAO.adicionarVarios })
+}
+
+const SEM_PRECOS = new Map<string, PrecoAnterior>()
+
+/** Preço que cada item custou na compra anterior mais recente, fora a lista aberta. */
+export function usePrecosAnteriores(listaId: string): Map<string, PrecoAnterior> {
+  const { data } = useQuery({ queryKey: chaves.comprasPassadas, queryFn: buscarComprasPassadas, staleTime: 5 * 60_000 })
+  return useMemo(() => (data ? precosAnteriores(data, listaId) : SEM_PRECOS), [data, listaId])
 }
 
 export function useAtualizarItem() {

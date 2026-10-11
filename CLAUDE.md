@@ -148,6 +148,7 @@ group by lista_id;
 - **Tabela `uso_ia`** ganhou a coluna `modelo`.
 - **Atividade ao vivo:** "digitando" e "pensando" não usam tabela. Vão por Realtime Broadcast no canal privado `lista:{lista_id}:atividade`; duas políticas em `realtime.messages` (migration `atividade_ao_vivo`) deixam só membros da lista ouvir e anunciar.
 - **Quem adicionou:** `itens.adicionado_por` tem `default auth.uid()`, então vale também para itens criados pela função `chat` (ela grava com o token do usuário).
+- **Seção do mercado:** coluna `itens.secao` (migration `secao_do_item`), nula na maioria dos itens. A seção sai do nome, por uma tabela de palavras em `src/lib/secoes.ts` (sem IA, funciona offline); a coluna só guarda a escolha feita à mão na folha do item.
 
 ---
 
@@ -336,6 +337,11 @@ type Acao =
 - **Dois canais por lista.** `lista:{id}` leva só as mudanças do banco. `lista:{id}:atividade` leva "digitando" e "pensando" por Broadcast, com repetição a cada 3 s enquanto dura e validade de 7 s em quem recebe (se o outro aparelho some, o aviso some junto). Não usar Presence para isso: o Realtime aceita 5 atualizações de Presence a cada 30 s por conexão e derruba o canal inteiro quando passa, levando a sincronização junto.
 - **Quem colocou o quê.** Com mais de um membro na lista, cada item mostra "Você adicionou" ou "Fulano adicionou" na linha e na folha de edição.
 - **Sem preço não trava.** Tocar no círculo marca o item sem pedir preço; ele aparece como "sem preço" e o rodapé conta quantos estão assim.
+- **Foto sem sinal fica na fila.** Toda foto de etiqueta passa por `src/lib/filaDeFotos.ts`: a imagem comprimida é guardada no IndexedDB e só sai de lá quando `ler-etiqueta` responde. Sem conexão ela aparece na conversa como "Na fila" e é lida sozinha quando o sinal volta, mesmo depois de fechar e reabrir o app. Falha de rede devolve a foto à fila (nova tentativa em 20 s); recusa do servidor vira erro com "Tentar de novo" e "Descartar". O indicador soma as fotos ao "N na fila".
+- **Lista agrupada por seção.** O que falta aparece em grupos (hortifrúti, padaria, açougue, frios, mercearia, bebidas, congelados, limpeza, higiene, pet, outros), na ordem do caminho da loja; "No carrinho" fica por último.
+- **Preço da última vez.** Cada item ainda não comprado mostra quanto custou na compra anterior mais recente de mesmo nome (`src/lib/previsao.ts`, sobre os itens com preço das outras listas da pessoa). Com isso o app estima o que falta (preço anterior vezes quantidade planejada, ou uma unidade) e o rodapé mostra a previsão do total. Item sem preço anterior, ou por peso sem peso planejado, fica fora da conta, e a tela diz quantos ficaram.
+- **Importar itens.** Na aba Itens: de um texto colado (`src/lib/importar.ts`, leitura sem IA; quantidade só nos formatos sem dúvida, e "Arroz 5kg" continua sendo nome) ou de outra lista da pessoa, inclusive finalizada (vêm nome, unidade, quantidade planejada e seção; preço não). O que já está na lista esperando compra não entra de novo. O lote vai num pedido só e reenviar não duplica.
+- **Resumo ao finalizar.** "Finalizar compra" abre antes um resumo (`src/lib/resumo.ts`): total, itens no carrinho, economia do atacado e do cartão em relação ao varejo das mesmas etiquetas, itens sem preço e itens que ficaram sem comprar. Só o segundo toque finaliza.
 
 ### 7.4 PWA
 

@@ -1,5 +1,5 @@
-import { Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { ChevronDown, Trash2 } from 'lucide-react'
+import { useId, useState, type FormEvent } from 'react'
 import { FotoArmazenada } from '@/components/chat/Foto'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { Sheet } from '@/components/ui/sheet'
 import { useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
 import { formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
 import { escolherFaixa, linhaCalculo, linhaFaixas } from '@/lib/precos'
+import { NOME_DA_SECAO, secaoPeloNome, SECOES, type Secao } from '@/lib/secoes'
 import type { Item, ItemPatch, Lista } from '@/types/app'
 
 type ItemSheetProps = {
@@ -15,6 +16,8 @@ type ItemSheetProps = {
   lista: Lista
   /** Nome de quem adicionou; só vem quando a lista é dividida com alguém. */
   quemAdicionou?: string | null
+  /** "R$ 4,69, em 12 de outubro": quanto custou na compra anterior. */
+  ultimoPreco?: string | null
   somenteLeitura?: boolean
   aoFechar: () => void
 }
@@ -23,11 +26,14 @@ const textoQtd = (qtd: number | null, unidade: Unidade) =>
   qtd === null ? '' : formatarQuantidade(qtd, unidade).replace(' kg', '')
 
 /** Edição rápida de um item: nome, unidade, quantidade e, se já está no carrinho, o preço. */
-export function ItemSheet({ item, lista, quemAdicionou, somenteLeitura = false, aoFechar }: ItemSheetProps) {
+export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeitura = false, aoFechar }: ItemSheetProps) {
   const atualizar = useAtualizarItem()
   const remover = useRemoverItem()
 
+  const idSecao = useId()
   const [nome, setNome] = useState(item.nome)
+  // '' = automática: o app decide pelo nome.
+  const [secao, setSecao] = useState<Secao | ''>(item.secao ?? '')
   const [unidade, setUnidade] = useState<Unidade>(item.unidade)
   const [comprado, setComprado] = useState(item.comprado)
   const [planejada, setPlanejada] = useState(textoQtd(item.qtd_planejada, item.unidade))
@@ -58,7 +64,7 @@ export function ItemSheet({ item, lista, quemAdicionou, somenteLeitura = false, 
       return setErro(unidade === 'un' ? 'A quantidade precisa ser um número inteiro.' : 'Confira o peso: use até 3 casas, como 0,750.')
     }
 
-    const patch: ItemPatch = { nome: nomeLimpo, unidade, qtd_planejada: qtdPlanejada, comprado }
+    const patch: ItemPatch = { nome: nomeLimpo, unidade, qtd_planejada: qtdPlanejada, comprado, secao: secao === '' ? null : secao }
     if (comprado) {
       const temPreco = precoDigitado !== null ? precoDigitado.trim() !== '' : precoAuto !== null
       if (comprada.trim() !== '' && qtdComprada === null) return setErro('Confira a quantidade comprada.')
@@ -111,6 +117,28 @@ export function ItemSheet({ item, lista, quemAdicionou, somenteLeitura = false, 
                 { value: 'kg', label: 'Peso (kg)' },
               ]}
             />
+          </div>
+
+          <div>
+            <label htmlFor={idSecao} className="mb-1.5 block text-[0.9375rem] font-medium">
+              Seção do mercado
+            </label>
+            <div className="relative">
+              <select
+                id={idSecao}
+                value={secao}
+                onChange={(e) => setSecao(e.target.value as Secao | '')}
+                className="h-12 w-full appearance-none truncate rounded-campo border border-controle/70 bg-card pl-4 pr-10 text-foreground disabled:opacity-50"
+              >
+                <option value="">Automática: {NOME_DA_SECAO[secaoPeloNome(nome)]}</option>
+                {SECOES.map((s) => (
+                  <option key={s} value={s}>
+                    {NOME_DA_SECAO[s]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown aria-hidden className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
 
           <div>
@@ -175,6 +203,10 @@ export function ItemSheet({ item, lista, quemAdicionou, somenteLeitura = false, 
             />
           )}
         </fieldset>
+
+        {ultimoPreco ? (
+          <p className="dinheiro whitespace-normal text-sm text-muted-foreground">Da última vez custou {ultimoPreco}.</p>
+        ) : null}
 
         {item.foto_path ? (
           <div>

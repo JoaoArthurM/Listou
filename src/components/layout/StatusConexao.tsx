@@ -34,14 +34,16 @@ function Barras({ cheias, batidas, buscando }: { cheias: number; batidas: number
 
 /** Indicador de conexão: mostra o que a sonda mediu, não o que o navegador supõe. */
 export function StatusConexao({ canal, className }: StatusConexaoProps) {
-  const { estado, pendentes, latenciaMs, batidas } = useConexao()
+  const { estado, pendentes, fotosNaFila, latenciaMs, batidas } = useConexao()
+  // Alterações de itens e fotos de etiqueta que esperam o sinal voltar.
+  const naFila = pendentes + fotosNaFila
   const base = 'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[0.8125rem] font-medium'
 
   if (estado === 'offline') {
     return (
       <span role="status" className={cn(base, 'bg-destaque text-destaque-foreground', className)}>
         <CloudOff aria-hidden className="size-3.5" />
-        {pendentes > 0 ? `Offline · ${pendentes} na fila` : 'Offline'}
+        {naFila > 0 ? `Offline · ${naFila} na fila` : 'Offline'}
       </span>
     )
   }

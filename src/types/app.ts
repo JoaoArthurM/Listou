@@ -3,6 +3,7 @@
 
 import type { Unidade } from '@/lib/dinheiro'
 import type { Faixa, FaixaAplicada } from '@/lib/precos'
+import type { Secao } from '@/lib/secoes'
 import type { DadosMensagem } from '../../supabase/functions/_shared/schemas'
 import type { Tables } from './database'
 
@@ -21,11 +22,13 @@ export type Perfil = Tables<'perfis'>
 
 export type Lista = Omit<Tables<'listas'>, 'status'> & { status: 'ativa' | 'finalizada' }
 
-export type Item = Omit<Tables<'itens'>, 'unidade' | 'faixas_preco' | 'faixa_aplicada' | 'origem_preco'> & {
+export type Item = Omit<Tables<'itens'>, 'unidade' | 'faixas_preco' | 'faixa_aplicada' | 'origem_preco' | 'secao'> & {
   unidade: Unidade
   faixas_preco: Faixa[] | null
   faixa_aplicada: FaixaAplicada | null
   origem_preco: 'ia' | 'manual' | null
+  /** Seção do mercado escolhida à mão; null = decidida pelo nome (src/lib/secoes.ts). */
+  secao: Secao | null
 }
 
 /** Campos de um item que o app altera. */
@@ -42,6 +45,7 @@ export type ItemPatch = Partial<
     | 'qtd_comprada'
     | 'foto_path'
     | 'origem_preco'
+    | 'secao'
   >
 >
 

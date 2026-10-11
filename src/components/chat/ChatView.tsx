@@ -1,15 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Mic, RotateCcw } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
+import { ArrowUp, Clock, Mic, RotateCcw } from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
 import { useConexao } from '@/hooks/useConexao'
 import { useMembros } from '@/hooks/useListas'
 import { useMensagens } from '@/hooks/useMensagens'
 import type { AoVivo } from '@/hooks/useRealtime'
-import { chaves, enviarAoChat, enviarFoto, enviarVozAoChat, lerEtiqueta } from '@/lib/api'
+import { chaves, enviarAoChat, enviarVozAoChat } from '@/lib/api'
 import { avisar } from '@/lib/avisos'
-import { comprimirImagem } from '@/lib/imagem'
+import { descartarFoto, fotografarEtiqueta, tentarFotoDeNovo, useFilaDeFotos } from '@/lib/filaDeFotos'
 import { listarNomes, primeiroNome } from '@/lib/utils'
 import { gravar, vozDisponivel, type Gravacao } from '@/lib/voz'
 import type { Item, Lista } from '@/types/app'
@@ -21,11 +21,12 @@ import { Balao, Digitando, MessageBubble, Pontos } from './MessageBubble'
 type ChatViewProps = { lista: Lista; itens: Item[]; aoVivo: AoVivo; somenteLeitura: boolean }
 
 // O que o usuário mandou e ainda não voltou do servidor (ou falhou). Fica só
-// na memória desta tela; o que deu certo chega pela busca de mensagens.
+// na memória desta tela; o que deu certo chega pela busca de mensagens. As
+// fotos não entram aqui: elas têm fila própria, que sobrevive a fechar o app
+// (src/lib/filaDeFotos.ts).
 type Pendente =
   | { id: string; tipo: 'texto'; texto: string; erro: string | null }
   | { id: string; tipo: 'voz'; audio: string; erro: string | null }
-  | { id: string; tipo: 'foto'; previa: string; foto: Blob | null; arquivo: File; erro: string | null }
 
 const SEM_CONEXAO = 'Sem conexão. Tente de novo quando o sinal voltar.'
 const SUGESTOES = ['O que falta?', 'Quanto já deu?']
@@ -40,20 +41,21 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   const { estado } = useConexao()
   const { data: mensagens, isPending } = useMensagens(lista.id)
   const { data: membros = [] } = useMembros(lista.id)
+  const fila = useFilaDeFotos()
+  const fotos = useMemo(() => fila.filter((f) => f.lista_id === lista.id), [fila, lista.id])
   const [texto, setTexto] = useState('')
   const [pendentes, setPendentes] = useState<Pendente[]>([])
   const [gravacao, setGravacao] = useState<Gravacao | null>(null)
   const rolagem = useRef<HTMLDivElement>(null)
-  const previas = useRef(new Set<string>())
   const pausa = useRef<number>()
   const { anunciar, outros } = aoVivo
 
   const offline = estado === 'offline'
-  const esperandoIA = pendentes.some((p) => p.erro === null)
+  const esperandoIA = pendentes.some((p) => p.erro === null) || fotos.some((f) => f.estado === 'lendo' || f.estado === 'preparando')
   const digitando = outros.filter((o) => o.digitando).map((o) => primeiroNome(o.nome) || 'Alguém')
   // A IA também "pensa" quando o pedido saiu do outro aparelho.
   const outrosEsperando = outros.filter((o) => o.esperandoIA).map((o) => primeiroNome(o.nome) || 'alguém')
-  const total = (mensagens?.length ?? 0) + pendentes.length
+  const total = (mensagens?.length ?? 0) + pendentes.length + fotos.length
 
   // A conversa abre e acompanha no fim, como qualquer chat.
   useLayoutEffect(() => {
@@ -66,14 +68,13 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     anunciar({ esperandoIA })
   }, [esperandoIA, anunciar])
 
-  useEffect(() => {
-    const urls = previas.current
-    return () => {
+  useEffect(
+    () => () => {
       window.clearTimeout(pausa.current)
       anunciar({ digitando: false, esperandoIA: false })
-      for (const url of urls) URL.revokeObjectURL(url)
-    }
-  }, [anunciar])
+    },
+    [anunciar],
+  )
 
   // Sair da tela no meio de uma gravação solta o microfone.
   useEffect(() => () => gravacao?.cancelar(), [gravacao])
@@ -93,17 +94,11 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     editar(pendente.id, { erro: null })
     try {
       if (pendente.tipo === 'texto') await enviarAoChat(lista.id, pendente.texto)
-      else if (pendente.tipo === 'voz') await enviarVozAoChat(lista.id, pendente.audio)
-      else {
-        const foto = pendente.foto ?? (await comprimirImagem(pendente.arquivo)).blob
-        editar(pendente.id, { foto })
-        await lerEtiqueta(lista.id, await enviarFoto(lista.id, foto))
-      }
+      else await enviarVozAoChat(lista.id, pendente.audio)
       await atualizarTudo()
       tirar(pendente.id)
     } catch (erro) {
-      const padrao = pendente.tipo === 'foto' ? 'Não consegui ler a etiqueta. Tente outra foto.' : 'Não consegui enviar. Tente de novo.'
-      editar(pendente.id, { erro: mensagemDoErro(erro, padrao) })
+      editar(pendente.id, { erro: mensagemDoErro(erro, 'Não consegui enviar. Tente de novo.') })
     }
   }
 
@@ -132,12 +127,6 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     pararDeDigitar()
     enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: limpo, erro: null })
     setTexto('')
-  }
-
-  function fotografar(arquivo: File) {
-    const previa = URL.createObjectURL(arquivo)
-    previas.current.add(previa)
-    enfileirar({ id: crypto.randomUUID(), tipo: 'foto', previa, foto: null, arquivo, erro: null })
   }
 
   async function comecarAGravar() {
@@ -221,22 +210,12 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                 <Balao lado="eu" className={pendente.erro ? 'opacity-60' : undefined}>
                   {pendente.texto}
                 </Balao>
-              ) : pendente.tipo === 'voz' ? (
+              ) : (
                 <Balao lado="eu" className={pendente.erro ? 'flex items-center gap-2 opacity-60' : 'flex items-center gap-2'}>
                   <Mic aria-hidden className="size-4" />
                   {pendente.erro ? 'Mensagem de voz' : 'Ouvindo o que você disse'}
                   {pendente.erro ? null : <Pontos />}
                 </Balao>
-              ) : (
-                <FotoEtiqueta src={pendente.previa} alt="Foto que você tirou da etiqueta">
-                  {pendente.erro ? null : (
-                    <div role="status" className="absolute inset-0 flex items-end bg-black/35">
-                      {/* Faixa de luz varrendo a etiqueta enquanto a leitura acontece. */}
-                      <span aria-hidden className="absolute inset-x-0 top-0 h-full animate-varredura bg-gradient-to-b from-transparent via-white/45 to-transparent" />
-                      <span className="relative w-full px-3 pb-2.5 text-sm font-medium text-white">Lendo etiqueta…</span>
-                    </div>
-                  )}
-                </FotoEtiqueta>
               )}
               {pendente.erro ? (
                 <div role="alert" className="flex max-w-[85%] flex-col items-end text-right text-sm text-destructive">
@@ -245,6 +224,46 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                     <RotateCcw className="size-4" />
                     Tentar de novo
                   </Button>
+                </div>
+              ) : null}
+            </li>
+          ))}
+
+          {fotos.map((foto) => (
+            <li key={foto.id} data-foto-na-fila={foto.estado} className="flex animate-surge flex-col items-end gap-1.5">
+              <FotoEtiqueta src={foto.previa} alt="Foto que você tirou da etiqueta">
+                {foto.estado === 'erro' ? null : foto.estado === 'na_fila' ? (
+                  <div role="status" className="absolute inset-0 flex items-end bg-black/45">
+                    <span className="flex w-full items-center gap-1.5 px-3 pb-2.5 text-sm font-medium text-white">
+                      <Clock aria-hidden className="size-4" />
+                      Na fila
+                    </span>
+                  </div>
+                ) : (
+                  <div role="status" className="absolute inset-0 flex items-end bg-black/35">
+                    {/* Faixa de luz varrendo a etiqueta enquanto a leitura acontece. */}
+                    <span aria-hidden className="absolute inset-x-0 top-0 h-full animate-varredura bg-gradient-to-b from-transparent via-white/45 to-transparent" />
+                    <span className="relative w-full px-3 pb-2.5 text-sm font-medium text-white">Lendo etiqueta…</span>
+                  </div>
+                )}
+              </FotoEtiqueta>
+              {foto.estado === 'na_fila' ? (
+                <p className="max-w-[85%] text-right text-sm text-muted-foreground">Sem sinal agora. Leio esta etiqueta sozinho quando a conexão voltar.</p>
+              ) : null}
+              {foto.estado === 'erro' ? (
+                <div role="alert" className="flex max-w-[85%] flex-col items-end text-right text-sm text-destructive">
+                  <span>{foto.erro}</span>
+                  <span className="-mr-3 flex">
+                    {foto.podeTentar ? (
+                      <Button variant="ghost" size="sm" className="px-3 text-foreground" onClick={() => void tentarFotoDeNovo(foto.id)}>
+                        <RotateCcw className="size-4" />
+                        Tentar de novo
+                      </Button>
+                    ) : null}
+                    <Button variant="ghost" size="sm" className="px-3 text-foreground" onClick={() => void descartarFoto(foto.id)}>
+                      Descartar
+                    </Button>
+                  </span>
                 </div>
               ) : null}
             </li>
@@ -271,7 +290,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
         <div className="shrink-0 border-t border-border bg-background px-3 pb-3 pt-2.5">
           {offline ? (
             <p role="status" className="mb-2 px-2 text-sm text-muted-foreground">
-              Sem conexão: o chat volta junto com o sinal. A aba Itens continua funcionando.
+              Sem conexão. As fotos de etiqueta ficam na fila e são lidas quando o sinal voltar; texto e voz precisam dele.
             </p>
           ) : null}
           {gravacao ? (
@@ -285,7 +304,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             />
           ) : (
             <form onSubmit={enviar} className="flex items-center gap-2">
-              <CameraButton aoFotografar={fotografar} />
+              <CameraButton aoFotografar={(arquivo) => void fotografarEtiqueta(lista.id, usuario.id, arquivo)} />
               <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
                 <input
                   value={texto}

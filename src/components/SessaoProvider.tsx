@@ -1,6 +1,7 @@
 import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ContextoSessao, type EstadoSessao, type Usuario } from '@/hooks/sessao'
+import { esvaziarFilaDeFotos } from '@/lib/filaDeFotos'
 import { limparCacheLocal } from '@/lib/queryClient'
 import { supabase } from '@/lib/supabase'
 
@@ -57,6 +58,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
       } else if (evento === 'SIGNED_OUT') {
         guardar(null)
         limparCacheLocal()
+        void esvaziarFilaDeFotos()
         setEstado({ usuario: null, carregando: false })
       }
     })

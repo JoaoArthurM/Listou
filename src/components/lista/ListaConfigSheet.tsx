@@ -1,5 +1,6 @@
 import { Check, Copy, Share2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
@@ -13,18 +14,25 @@ import {
   useSairDaLista,
 } from '@/hooks/useListas'
 import { avisar } from '@/lib/avisos'
-import { formatarValor, parseDinheiro } from '@/lib/dinheiro'
+import { formatarReais, formatarValor, parseDinheiro } from '@/lib/dinheiro'
 import { nomeCartao } from '@/lib/precos'
+import { resumirCompra } from '@/lib/resumo'
 import { navegar } from '@/lib/rota'
-import { listarNomes } from '@/lib/utils'
-import type { Lista } from '@/types/app'
+import { listarNomes, plural } from '@/lib/utils'
+import type { Item, Lista } from '@/types/app'
 
-type ListaConfigSheetProps = { lista: Lista; aoFechar: () => void }
+type ListaConfigSheetProps = { lista: Lista; itens: Item[]; aoFechar: () => void }
+
+// "Leite, Café, Pão e mais 3": nomes demais não cabem numa frase.
+function algunsNomes(nomes: string[]): string {
+  if (nomes.length <= 4) return listarNomes(nomes)
+  return `${nomes.slice(0, 3).join(', ')} e mais ${nomes.length - 3}`
+}
 
 const mensagem = (erro: unknown) => (erro instanceof Error ? erro.message : 'Algo deu errado. Tente de novo.')
 
 /** Opções da lista: convidar, editar dados, cartões da loja, finalizar e sair. */
-export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
+export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetProps) {
   const usuario = useUsuario()
   const { data: membros = [] } = useMembros(lista.id)
   const atualizar = useAtualizarLista(lista.id)
@@ -40,6 +48,8 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
   const [codigo, setCodigo] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
   const [confirmarSaida, setConfirmarSaida] = useState(false)
+  // Antes de fechar a compra, a pessoa vê o resumo dela.
+  const [resumindo, setResumindo] = useState(false)
 
   const souDono = membros.some((m) => m.perfil_id === usuario.id && m.papel === 'dono') || lista.criado_por === usuario.id
   const outros = membros.filter((m) => m.perfil_id !== usuario.id).map((m) => m.nome)
@@ -109,6 +119,69 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
     }
     if (souDono) excluir.mutate(lista.id, opcoes)
     else sair.mutate(lista.id, opcoes)
+  }
+
+  if (resumindo) {
+    const resumo = resumirCompra(itens)
+    const { economia } = resumo
+    return (
+      <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title="Finalizar compra" description="Confira o resumo antes de fechar.">
+        <div className="space-y-5">
+          <dl className="rounded-cartao bg-card px-4 shadow-cartao">
+            <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border">
+              <dt>Itens no carrinho</dt>
+              <dd className="dinheiro">
+                {resumo.comprados} de {itens.length}
+              </dd>
+            </div>
+            {economia.atacado > 0 ? (
+              <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border">
+                <dt>Economia com atacado</dt>
+                <dd className="dinheiro text-sucesso">{formatarReais(economia.atacado)}</dd>
+              </div>
+            ) : null}
+            {economia.cartao > 0 ? (
+              <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border">
+                <dt>Economia com cartão</dt>
+                <dd className="dinheiro text-sucesso">{formatarReais(economia.cartao)}</dd>
+              </div>
+            ) : null}
+            <div className="flex min-h-14 items-center justify-between gap-3">
+              <dt className="font-medium">Total do carrinho</dt>
+              <dd className="dinheiro text-[1.375rem] font-semibold tracking-[-0.02em]">{formatarReais(resumo.total_centavos)}</dd>
+            </div>
+          </dl>
+
+          {economia.total > 0 ? (
+            <p className="text-[0.9375rem] leading-snug text-muted-foreground">
+              A economia é a diferença para o preço de varejo das mesmas etiquetas: no varejo esta compra sairia por{' '}
+              <span className="dinheiro">{formatarReais(resumo.total_centavos + economia.total)}</span>.
+            </p>
+          ) : null}
+
+          {resumo.semPreco.length > 0 ? (
+            <Dica>
+              {plural(resumo.semPreco.length, 'item está', 'itens estão')} no carrinho sem preço e {resumo.semPreco.length === 1 ? 'fica' : 'ficam'} fora do total:{' '}
+              {algunsNomes(resumo.semPreco)}. Para incluir, volte e informe o preço em cada um.
+            </Dica>
+          ) : null}
+          {resumo.naoComprados.length > 0 ? (
+            <p className="text-[0.9375rem] leading-snug text-muted-foreground">
+              {plural(resumo.naoComprados.length, 'item ficou', 'itens ficaram')} sem comprar: {algunsNomes(resumo.naoComprados)}.
+            </p>
+          ) : null}
+
+          <div className="space-y-3 pb-1">
+            <Button className="w-full" disabled={atualizar.isPending} onClick={mudarStatus}>
+              Finalizar compra
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setResumindo(false)}>
+              Voltar
+            </Button>
+          </div>
+        </div>
+      </Sheet>
+    )
   }
 
   return (
@@ -186,7 +259,7 @@ export function ListaConfigSheet({ lista, aoFechar }: ListaConfigSheetProps) {
         ) : null}
 
         <section className="space-y-3 pb-1">
-          <Button className="w-full" disabled={atualizar.isPending} onClick={mudarStatus}>
+          <Button className="w-full" disabled={atualizar.isPending} onClick={finalizada ? mudarStatus : () => setResumindo(true)}>
             {finalizada ? 'Reabrir lista' : 'Finalizar compra'}
           </Button>
           <Button variant={confirmarSaida ? 'destructive' : 'ghost'} className={confirmarSaida ? 'w-full' : 'w-full text-destructive'} onClick={sairOuExcluir}>

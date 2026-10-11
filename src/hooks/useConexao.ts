@@ -1,11 +1,14 @@
 import { useIsMutating } from '@tanstack/react-query'
 import { useSinal } from '@/lib/conexao'
+import { useFilaDeFotos } from '@/lib/filaDeFotos'
 import { MUTACAO_ITENS } from '@/lib/mutacoes'
 
 export type Conexao = {
   estado: 'conectando' | 'online' | 'lento' | 'offline' | 'sincronizando'
   /** Alterações de itens que ainda não chegaram ao servidor. */
   pendentes: number
+  /** Fotos de etiqueta guardadas no aparelho, esperando sinal para serem lidas. */
+  fotosNaFila: number
   latenciaMs: number | null
   /** Muda a cada sinal de vida real (resposta do servidor ou dado recebido). */
   batidas: number
@@ -15,7 +18,8 @@ export type Conexao = {
 export function useConexao(): Conexao {
   const sinal = useSinal()
   const pendentes = useIsMutating({ mutationKey: MUTACAO_ITENS })
-  const base = { pendentes, latenciaMs: sinal.latenciaMs, batidas: sinal.batidas }
+  const fotosNaFila = useFilaDeFotos().filter((f) => f.estado !== 'erro').length
+  const base = { pendentes, fotosNaFila, latenciaMs: sinal.latenciaMs, batidas: sinal.batidas }
 
   if (sinal.estado === 'fora') return { ...base, estado: 'offline' }
   if (sinal.estado === 'verificando') return { ...base, estado: 'conectando' }

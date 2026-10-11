@@ -10,6 +10,8 @@ type ItemRowProps = {
   somenteLeitura?: boolean
   /** Nome de quem adicionou. Só vem quando a lista é dividida com alguém. */
   quemAdicionou?: string | null
+  /** "R$ 4,69" ou "R$ 5,99 o kg": quanto custou na compra anterior. Só para item ainda não comprado. */
+  ultimoPreco?: string | null
   aoAlternar: (item: Item) => void
   aoAbrir: (item: Item) => void
 }
@@ -27,11 +29,12 @@ function detalheDaCompra(item: Item): string | null {
 }
 
 /** Linha do checklist: círculo à esquerda marca, o resto da linha abre a edição. */
-export function ItemRow({ item, somenteLeitura = false, quemAdicionou, aoAlternar, aoAbrir }: ItemRowProps) {
+export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPreco, aoAlternar, aoAbrir }: ItemRowProps) {
   // A animação do check só toca quando o usuário marca, não a cada vez que a lista é desenhada.
   const [recemMarcado, setRecemMarcado] = useState(false)
   const compra = item.comprado ? (detalheDaCompra(item) ?? 'sem preço') : null
-  const detalhe = [compra, quemAdicionou ? `${quemAdicionou} adicionou` : null].filter(Boolean).join(' · ') || null
+  const anterior = !item.comprado && ultimoPreco ? `da última vez ${ultimoPreco}` : null
+  const detalhe = [compra, anterior, quemAdicionou ? `${quemAdicionou} adicionou` : null].filter(Boolean).join(' · ') || null
   const planejado = item.qtd_planejada === null ? null : formatarQuantidade(item.qtd_planejada, item.unidade)
 
   return (

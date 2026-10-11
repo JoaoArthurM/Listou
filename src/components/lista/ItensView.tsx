@@ -1,4 +1,21 @@
-import { ChevronDown, Plus, ShoppingBasket, ShoppingCart, type LucideIcon } from 'lucide-react'
+import {
+  Bath,
+  Beef,
+  Carrot,
+  ChevronDown,
+  Croissant,
+  CupSoda,
+  ListPlus,
+  Milk,
+  Package,
+  PawPrint,
+  Plus,
+  ShoppingCart,
+  Snowflake,
+  SprayCan,
+  Wheat,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Dica } from '@/components/layout/Dica'
 import { Button } from '@/components/ui/button'
@@ -6,48 +23,80 @@ import { useUsuario } from '@/hooks/sessao'
 import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
 import { useMembros } from '@/hooks/useListas'
 import { formatarReais } from '@/lib/dinheiro'
-import { cn, primeiroNome } from '@/lib/utils'
+import { precoAnteriorDe, preverFaltantes, type PrecoAnterior } from '@/lib/previsao'
+import { agruparPorSecao, NOME_DA_SECAO, type Secao } from '@/lib/secoes'
+import { cn, plural, primeiroNome } from '@/lib/utils'
 import type { Item, Lista, Resumo } from '@/types/app'
+import { ImportarSheet } from './ImportarSheet'
 import { ItemRow } from './ItemRow'
 import { ItemSheet } from './ItemSheet'
 
-type ItensViewProps = { lista: Lista; itens: Item[]; resumo: Resumo; carregando: boolean; somenteLeitura: boolean }
+type ItensViewProps = {
+  lista: Lista
+  itens: Item[]
+  resumo: Resumo
+  /** Quanto cada item custou na compra anterior (src/lib/previsao.ts). */
+  precos: Map<string, PrecoAnterior>
+  carregando: boolean
+  somenteLeitura: boolean
+}
 
-type SecaoProps = { titulo: string; icone: LucideIcon; contagem: number; children: ReactNode }
+const ICONE_DA_SECAO: Record<Secao, LucideIcon> = {
+  hortifruti: Carrot,
+  padaria: Croissant,
+  acougue: Beef,
+  frios: Milk,
+  mercearia: Wheat,
+  bebidas: CupSoda,
+  congelados: Snowflake,
+  limpeza: SprayCan,
+  higiene: Bath,
+  pet: PawPrint,
+  outros: Package,
+}
+
+const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' })
+
+type GrupoProps = { titulo: string; icone: LucideIcon; contagem: number; children: ReactNode }
 
 /** Grupo recolhível do checklist, como as categorias da referência. */
-function Secao({ titulo, icone: Icone, contagem, children }: SecaoProps) {
-  const [aberta, setAberta] = useState(true)
+function Grupo({ titulo, icone: Icone, contagem, children }: GrupoProps) {
+  const [aberto, setAberto] = useState(true)
   return (
     <section className="rounded-cartao bg-card shadow-cartao">
       <h2>
         <button
           type="button"
-          aria-expanded={aberta}
-          onClick={() => setAberta((a) => !a)}
+          aria-expanded={aberto}
+          onClick={() => setAberto((a) => !a)}
           className="flex min-h-14 w-full items-center gap-3 rounded-cartao pl-3.5 pr-4 text-left text-verde"
         >
           <Icone aria-hidden className="size-6 shrink-0" strokeWidth={1.6} />
           <span className="flex-1 text-[1.125rem] font-medium tracking-[-0.015em]">{titulo}</span>
           <span className="dinheiro text-[0.9375rem] text-muted-foreground">{contagem}</span>
           <span className="grid size-6 place-items-center rounded-full border border-controle/70">
-            <ChevronDown aria-hidden className={cn('size-3.5 transition-transform duration-300 ease-saida', !aberta && '-rotate-90')} />
+            <ChevronDown aria-hidden className={cn('size-3.5 transition-transform duration-300 ease-saida', !aberto && '-rotate-90')} />
           </span>
         </button>
       </h2>
-      {aberta ? <ul className="pb-1 pl-0.5">{children}</ul> : null}
+      {aberto ? <ul className="pb-1 pl-0.5">{children}</ul> : null}
     </section>
   )
 }
 
-/** Aba Itens: checklist dividido em "Faltando" e "No carrinho", com adição rápida no rodapé da folha. */
-export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: ItensViewProps) {
+/**
+ * Aba Itens: o que falta, agrupado pelas seções do mercado na ordem do caminho
+ * da loja, e por último o que já está no carrinho. Adição rápida e importação
+ * no rodapé da folha.
+ */
+export function ItensView({ lista, itens, resumo, precos, carregando, somenteLeitura }: ItensViewProps) {
   const adicionar = useAdicionarItem()
   const atualizar = useAtualizarItem()
   const usuario = useUsuario()
   const { data: membros = [] } = useMembros(lista.id)
   const [novo, setNovo] = useState('')
   const [editando, setEditando] = useState<string | null>(null)
+  const [importando, setImportando] = useState(false)
   const [recemAdicionado, setRecemAdicionado] = useState<string | null>(null)
   const rolagem = useRef<HTMLDivElement>(null)
 
@@ -55,6 +104,7 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
   const noCarrinho = itens.filter((i) => i.comprado)
   const itemEmEdicao = itens.find((i) => i.id === editando) ?? null
   const estouro = lista.orcamento_centavos === null ? 0 : resumo.total_centavos - lista.orcamento_centavos
+  const previsao = preverFaltantes(faltando, precos)
 
   // Quem pôs cada item só aparece quando a lista é dividida com alguém.
   const compartilhada = membros.length > 1
@@ -62,6 +112,14 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
     if (!compartilhada || !item.adicionado_por) return null
     if (item.adicionado_por === usuario.id) return 'Você'
     return primeiroNome(membros.find((m) => m.perfil_id === item.adicionado_por)?.nome) || null
+  }
+
+  // "R$ 4,69" ou "R$ 5,99 o kg"; com a data, para a folha do item.
+  const ultimoPreco = (item: Item, comData = false): string | null => {
+    const anterior = precoAnteriorDe(precos, item.nome)
+    if (!anterior) return null
+    const preco = `${formatarReais(anterior.preco_centavos)}${anterior.unidade === 'kg' ? ' o kg' : ''}`
+    return comData && anterior.quando ? `${preco}, em ${dataCurta.format(new Date(anterior.quando))}` : preco
   }
 
   useEffect(() => {
@@ -90,6 +148,7 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
       item={item}
       somenteLeitura={somenteLeitura}
       quemAdicionou={quemAdicionou(item)}
+      ultimoPreco={ultimoPreco(item)}
       aoAlternar={alternar}
       aoAbrir={(i) => setEditando(i.id)}
     />
@@ -113,20 +172,34 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
             <p className="mt-3 max-w-[19rem] text-[1.0625rem] leading-snug text-muted-foreground">
               {somenteLeitura
                 ? 'Esta compra foi finalizada sem itens.'
-                : 'Escreva o primeiro item aqui embaixo ou peça no chat: “adiciona leite e pão”.'}
+                : 'Escreva o primeiro item aqui embaixo, peça no chat (“adiciona leite e pão”) ou traga uma lista pronta.'}
             </p>
+            {somenteLeitura ? null : (
+              <Button variant="secondary" className="mt-5" onClick={() => setImportando(true)}>
+                <ListPlus className="size-5" />
+                Importar uma lista
+              </Button>
+            )}
           </div>
         ) : (
           <>
-            {faltando.length > 0 ? (
-              <Secao titulo="Faltando" icone={ShoppingBasket} contagem={faltando.length}>
-                {faltando.map(linha)}
-              </Secao>
+            {!somenteLeitura && previsao.comPreco > 0 ? (
+              <p data-previsao className="px-2 text-[0.9375rem] leading-snug text-muted-foreground">
+                Pelo preço da última compra, o que falta deve dar <span className="dinheiro font-medium text-foreground">{formatarReais(previsao.centavos)}</span>.
+                {previsao.semPreco > 0
+                  ? ` ${plural(previsao.semPreco, 'item', 'itens')} sem preço anterior ${previsao.semPreco === 1 ? 'ficou' : 'ficaram'} fora da conta.`
+                  : null}
+              </p>
             ) : null}
+            {agruparPorSecao(faltando).map(({ secao, itens: daSecao }) => (
+              <Grupo key={secao} titulo={NOME_DA_SECAO[secao]} icone={ICONE_DA_SECAO[secao]} contagem={daSecao.length}>
+                {daSecao.map(linha)}
+              </Grupo>
+            ))}
             {noCarrinho.length > 0 ? (
-              <Secao titulo="No carrinho" icone={ShoppingCart} contagem={noCarrinho.length}>
+              <Grupo titulo="No carrinho" icone={ShoppingCart} contagem={noCarrinho.length}>
                 {noCarrinho.map(linha)}
-              </Secao>
+              </Grupo>
             ) : null}
           </>
         )}
@@ -134,6 +207,9 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
 
       {somenteLeitura ? null : (
         <form onSubmit={adicionarItem} className="flex shrink-0 items-center gap-2 border-t border-border bg-background px-3 pb-3 pt-2.5">
+          <Button variant="secondary" size="icon" aria-label="Importar itens" className="size-[3.25rem]" onClick={() => setImportando(true)}>
+            <ListPlus className="size-[1.375rem]" />
+          </Button>
           <div className="flex h-[3.25rem] min-w-0 flex-1 items-center rounded-full border border-controle/70 bg-card pl-5 pr-1 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
             <input
               value={novo}
@@ -158,10 +234,13 @@ export function ItensView({ lista, itens, resumo, carregando, somenteLeitura }: 
           item={itemEmEdicao}
           lista={lista}
           quemAdicionou={quemAdicionou(itemEmEdicao)}
+          ultimoPreco={ultimoPreco(itemEmEdicao, true)}
           somenteLeitura={somenteLeitura}
           aoFechar={() => setEditando(null)}
         />
       ) : null}
+
+      {importando ? <ImportarSheet lista={lista} itens={itens} aoFechar={() => setImportando(false)} /> : null}
     </>
   )
 }

@@ -16,6 +16,7 @@ import type {
 } from '@/types/app'
 import type { Json, Tables } from '@/types/database'
 import { calcularTotalCentavos, somarCentavos, type Unidade } from './dinheiro'
+import type { CompraPassada } from './previsao'
 import { BUCKET_ETIQUETAS, supabase } from './supabase'
 
 export const chaves = {
@@ -27,9 +28,13 @@ export const chaves = {
   itens: (listaId: string) => ['itens', listaId] as const,
   mensagens: (listaId: string) => ['mensagens', listaId] as const,
   foto: (caminho: string) => ['foto', caminho] as const,
+  comprasPassadas: ['compras-passadas'] as const,
 }
 
-/** Erro com mensagem pronta para mostrar ao usuário. */
+/**
+ * Erro com mensagem pronta para mostrar ao usuário. O código "rede" marca a
+ * falha em que o pedido nem chegou ao servidor: vale tentar de novo sozinho.
+ */
 export class ErroDoApp extends Error {
   constructor(
     mensagem: string,
@@ -261,6 +266,38 @@ export async function inserirItem(novo: NovoItem): Promise<void> {
   if (error && error.code !== '23505') falhar(error, 'Não deu para adicionar o item.')
 }
 
+/** Vários itens de uma vez (importação). Reenviar o mesmo lote não duplica: id repetido é ignorado. */
+export async function inserirItens(novos: NovoItem[]): Promise<void> {
+  if (novos.length === 0) return
+  // No insert em lote todas as linhas precisam ter as mesmas colunas.
+  const linhas = novos.map((novo) => ({
+    id: novo.id,
+    lista_id: novo.lista_id,
+    nome: novo.nome,
+    unidade: novo.unidade ?? 'un',
+    qtd_planejada: novo.qtd_planejada ?? null,
+    secao: novo.secao ?? null,
+    adicionado_por: novo.adicionado_por ?? null,
+  }))
+  const { error } = await supabase.from('itens').upsert(linhas, { onConflict: 'id', ignoreDuplicates: true })
+  if (error) falhar(error, 'Não deu para importar os itens.')
+}
+
+const MAX_COMPRAS_PASSADAS = 800
+
+/** O que a pessoa já comprou com preço, do mais recente para o mais antigo (src/lib/previsao.ts). */
+export async function buscarComprasPassadas(): Promise<CompraPassada[]> {
+  const { data, error } = await supabase
+    .from('itens')
+    .select('nome, unidade, preco_unit_centavos, comprado_em, lista_id')
+    .eq('comprado', true)
+    .not('preco_unit_centavos', 'is', null)
+    .order('comprado_em', { ascending: false })
+    .limit(MAX_COMPRAS_PASSADAS)
+  if (error) falhar(error, 'Não deu para carregar os preços das compras anteriores.')
+  return data as CompraPassada[]
+}
+
 export async function atualizarItem(id: string, patch: ItemPatch): Promise<void> {
   const { faixas_preco, ...resto } = patch
   const linha = faixas_preco === undefined ? resto : { ...resto, faixas_preco: faixas_preco as Json }
@@ -331,7 +368,9 @@ export async function enviarFoto(listaId: string, foto: Blob): Promise<string> {
     .upload(caminho, foto, { contentType: 'image/jpeg', cacheControl: '3600' })
   if (error) {
     console.error('upload da etiqueta', error)
-    throw new ErroDoApp('Não deu para enviar a foto. Tente de novo.')
+    // Recusa do servidor vem com o status HTTP; sem ele, o pedido não chegou lá.
+    const recusado = typeof (error as { status?: unknown }).status === 'number'
+    throw new ErroDoApp('Não deu para enviar a foto. Tente de novo.', recusado ? undefined : 'rede')
   }
   return caminho
 }
@@ -341,7 +380,9 @@ export async function lerEtiqueta(listaId: string, fotoPath: string): Promise<Re
     body: { lista_id: listaId, foto_path: fotoPath },
   })
   if (error || !data) {
-    throw new ErroDoApp(await mensagemDeErro(error, 'Não consegui ler a etiqueta. Tente outra foto.'))
+    // A função respondeu (mesmo com erro) quando há uma Response no contexto.
+    const respondeu = (error as { context?: unknown } | null)?.context instanceof Response
+    throw new ErroDoApp(await mensagemDeErro(error, 'Não consegui ler a etiqueta. Tente outra foto.'), error && !respondeu ? 'rede' : undefined)
   }
   return data
 }

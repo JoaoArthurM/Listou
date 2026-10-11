@@ -73,6 +73,7 @@ export type Database = {
           preco_unit_centavos: number | null
           qtd_comprada: number | null
           qtd_planejada: number | null
+          secao: string | null
           total_centavos: number | null
           unidade: string
         }
@@ -92,6 +93,7 @@ export type Database = {
           preco_unit_centavos?: number | null
           qtd_comprada?: number | null
           qtd_planejada?: number | null
+          secao?: string | null
           total_centavos?: number | null
           unidade?: string
         }
@@ -111,6 +113,7 @@ export type Database = {
           preco_unit_centavos?: number | null
           qtd_comprada?: number | null
           qtd_planejada?: number | null
+          secao?: string | null
           total_centavos?: number | null
           unidade?: string
         }
