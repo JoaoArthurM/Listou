@@ -30,7 +30,7 @@ export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente';
   if (lado === 'assistente') {
     return (
       <span aria-hidden className="relative mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
-        {/* Anel em degradê girando; o miolo escuro fica parado por cima. */}
+        {/* Anel em degradê girando; o miolo fica parado por cima. */}
         <span
           className={cn('absolute inset-0 rounded-full', pensando ? 'animate-gira-rapido' : 'animate-gira')}
           style={{
@@ -39,10 +39,7 @@ export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente';
           }}
         />
         <span className="absolute inset-[2.5px] rounded-full bg-card" />
-        <Sparkles
-          className={cn('relative size-4 text-primary-texto', pensando ? 'animate-brilha-rapido' : 'animate-brilha')}
-          strokeWidth={2.25}
-        />
+        <Sparkles className="relative size-4 text-primary-texto" strokeWidth={2.25} />
       </span>
     )
   }
