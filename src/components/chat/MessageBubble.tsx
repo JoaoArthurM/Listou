@@ -1,9 +1,10 @@
-import { Sparkles, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import type { Item, Lista, Mensagem } from '@/types/app'
 import { ConfirmCard } from './ConfirmCard'
 import { FotoArmazenada } from './Foto'
+import { IconeListou } from './IconeListou'
 import { PropostaCard } from './PropostaCard'
 
 type BalaoProps = {
@@ -39,7 +40,7 @@ export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente';
           }}
         />
         <span className="absolute inset-[2.5px] rounded-full bg-card" />
-        <Sparkles className="relative size-4 text-primary-texto" strokeWidth={2.25} />
+        <IconeListou className="relative size-[1.125rem] text-primary-texto" />
       </span>
     )
   }
