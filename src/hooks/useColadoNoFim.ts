@@ -8,6 +8,8 @@ const MARGEM_PX = 80
  * própria (fotos e cartões que terminam de carregar). Se a pessoa subir para
  * ler, o hook solta e não puxa a tela de volta; ao chegar perto do fim, ele
  * cola de novo. `irParaOFim` força a descida (ex.: ao enviar uma mensagem).
+ * Quando a própria área encolhe (o teclado abriu, uma faixa apareceu embaixo),
+ * a última mensagem volta a ficar à vista, mesmo que a pessoa tivesse subido.
  *
  * `rolagem` vai na área com overflow e `conteudo` no bloco que a preenche.
  */
@@ -32,12 +34,28 @@ export function useColadoNoFim(gatilho: unknown) {
 
   useEffect(() => {
     const bloco = conteudo.current
-    if (!bloco || typeof ResizeObserver === 'undefined') return
-    const observador = new ResizeObserver(() => {
+    const area = rolagem.current
+    if (typeof ResizeObserver === 'undefined') return
+    const doConteudo = new ResizeObserver(() => {
       if (colado.current) descer()
     })
-    observador.observe(bloco)
-    return () => observador.disconnect()
+    if (bloco) doConteudo.observe(bloco)
+
+    let altura = area?.clientHeight ?? 0
+    const daArea = new ResizeObserver(() => {
+      const atual = area?.clientHeight ?? 0
+      const encolheu = atual < altura
+      altura = atual
+      if (encolheu) irParaOFim()
+      else if (colado.current) descer()
+    })
+    if (area) daArea.observe(area)
+
+    return () => {
+      doConteudo.disconnect()
+      daArea.disconnect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const aoRolar = () => {
