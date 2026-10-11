@@ -10,7 +10,7 @@
 //   Gemini, que devolve a transcrição e as ações na mesma chamada.
 
 import { autenticar, type Contexto } from '../_shared/auth.ts'
-import { formatarQuantidade, formatarReais, type Unidade } from '../_shared/dinheiro.ts'
+import { formatarQuantidade, formatarReais, precoUnitarioDoTotal, type Unidade } from '../_shared/dinheiro.ts'
 import { gerarJson, registrarUso, type ParteDeEntrada, type RespostaGemini } from '../_shared/gemini.ts'
 import { cors, emSegundoPlano, erro, json } from '../_shared/http.ts'
 import { problemasDaLeitura, textoDoProblema, travaPreco } from '../_shared/leitura.ts'
@@ -52,6 +52,63 @@ const comInicialMaiuscula = (texto: string) => texto.charAt(0).toUpperCase() + t
 function comQuantidade(item: { nome: string; unidade: Unidade; qtd_planejada: number | null }): string {
   if (item.qtd_planejada === null) return item.nome
   return `${item.nome} (${formatarQuantidade(item.qtd_planejada, item.unidade)}${item.unidade === 'un' ? ' un' : ''})`
+}
+
+/**
+ * "5 por 10": troca o preço do conjunto pelo preço de uma unidade (divisão em
+ * código). Sem quantidade dita nem planejada não há conta: vira pergunta. Se
+ * a divisão não fecha em centavos, a diferença é dita, não escondida.
+ */
+function resolverTotais(acoes: Acao[], itens: ItemDaLista[], avisos: string[]): Acao[] {
+  const porId = new Map(itens.map((i) => [i.id, i]))
+  const saida: Acao[] = []
+  for (const acao of acoes) {
+    if ((acao.tipo !== 'adicionar_item' && acao.tipo !== 'marcar_comprado') || acao.preco_total_centavos === undefined) {
+      saida.push(acao)
+      continue
+    }
+    const { preco_total_centavos: total, ...resto } = acao
+    if (acao.preco_centavos !== undefined) {
+      saida.push(resto as Acao) // preço unitário dito vale mais que o do conjunto
+      continue
+    }
+    let nome: string
+    let qtd: number | null | undefined = acao.qtd
+    if (acao.tipo === 'marcar_comprado') {
+      const item = porId.get(acao.item_id)
+      if (!item) {
+        saida.push(resto as Acao) // id inválido: segue para ser descartado como antes
+        continue
+      }
+      nome = item.nome
+      qtd ??= (item.comprado ? item.qtd_comprada : null) ?? item.qtd_planejada
+    } else {
+      nome = comInicialMaiuscula(acao.nome)
+      const chave = normalizarCartao(nome)
+      qtd ??= itens.find((i) => !i.comprado && normalizarCartao(i.nome) === chave)?.qtd_planejada
+    }
+    if (qtd === null || qtd === undefined) {
+      avisos.push(`Quantos “${nome}” você levou? Diga a quantidade junto com o preço.`)
+      continue
+    }
+    const unidade = acao.tipo === 'adicionar_item' ? acao.unidade : porId.get(acao.item_id)?.unidade
+    if (unidade !== 'kg' && !Number.isInteger(qtd)) {
+      avisos.push(`“${nome}” é vendido por unidade: diga um número inteiro.`)
+      continue
+    }
+    const unitario = precoUnitarioDoTotal(total, qtd)
+    if (!unitario) {
+      avisos.push(`Não consegui dividir ${formatarReais(total)} por ${qtd} “${nome}”. Diga o preço de cada um.`)
+      continue
+    }
+    if (!unitario.exato) {
+      avisos.push(
+        `${formatarReais(total)} por ${qtd} “${nome}” não fecha em centavos: ficou ${formatarReais(unitario.preco_centavos)} cada, total ${formatarReais(unitario.total_centavos)}.`,
+      )
+    }
+    saida.push({ ...resto, qtd, preco_centavos: unitario.preco_centavos } as Acao)
+  }
+  return saida
 }
 
 async function responder(ctx: Contexto, listaId: string, texto: string, tipo: 'texto' | 'sistema' = 'texto') {
@@ -296,6 +353,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    const avisos: string[] = []
+    acoes = resolverTotais(acoes, itens, avisos)
+
     const porId = new Map(itens.map((i) => [i.id, i]))
     const novos: Array<{ lista_id: string; nome: string; unidade: Unidade; qtd_planejada: number | null }> = []
     // Itens novos que já vêm com preço dito: depois de gravados, viram proposta de compra.
@@ -303,7 +363,6 @@ Deno.serve(async (req) => {
     const repetidos: string[] = []
     const propostas: AcaoProposta[] = []
     const paraOCarrinho: Array<{ item: ItemDaLista; qtd: number | null }> = []
-    const avisos: string[] = []
     const falas: string[] = []
     let qtdDoCard: number | null = null
     let querFaltantes = false

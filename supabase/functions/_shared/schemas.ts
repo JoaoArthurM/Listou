@@ -188,6 +188,8 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
     // Item que não estava na lista e o usuário já pegou, dizendo o preço
     // ("ovo 12,30 1 caixa"): entra na lista e vira proposta de compra.
     preco_centavos: centavos.optional(),
+    // Preço do conjunto, como foi dito ("5 por 10"): a divisão é do código.
+    preco_total_centavos: centavos.optional(),
   }),
   z.object({ tipo: z.literal('remover_item'), item_id: uuid }),
   // Sem preço, só põe o item no carrinho (fica fora do total até alguém informar).
@@ -196,6 +198,7 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
     item_id: uuid,
     qtd: quantidade.optional(),
     preco_centavos: centavos.optional(),
+    preco_total_centavos: centavos.optional(),
   }),
   z.object({ tipo: z.literal('desmarcar_comprado'), item_id: uuid }),
   z.object({ tipo: z.literal('consultar_faltantes') }),

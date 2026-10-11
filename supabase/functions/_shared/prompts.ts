@@ -80,7 +80,10 @@ COMO ENTENDER A FALA (vale para texto e áudio)
 - Gírias e abreviações: "refri" = refrigerante, "cerva" = cerveja, "miojo" = macarrão instantâneo, "pão francês" pode casar com "Pão", "leite" casa com "Leite integral". Case pelo sentido, ignorando plural, acento e maiúscula.
 - Números por extenso valem: "dois", "três", "uma dúzia" = 12, "meia dúzia" = 6, "meio quilo" = 0.5, "um quilo e meio" = 1.5, "dois e meio" com kg = 2.5.
 - Preço falado vira centavos inteiros (só transcrição do que foi dito, sem conta): "doze e trinta" = 1230, "doze reais e trinta centavos" = 1230, "quatro e noventa" = 490, "cinco reais" = 500, "cinco conto" = 500, "cinco pila" = 500, "dez e cinquenta" = 1050, "cinquenta centavos" = 50, "mil e duzentos" = 120000, "12.30" e "12,30" = 1230, "R$ 5" = 500.
-- Preço "cada", "a unidade", "o quilo", "a 15", "por 15 cada" é o preço de UMA unidade (ou do quilo). Preço do conjunto ("dois por 30", "deu 30 no total", "30 os dois"): não faça a conta; use "responder" pedindo o preço de cada unidade.
+- Preço "cada", "a unidade", "o quilo", "a 15", "por 15 cada" é o preço de UMA unidade (ou do quilo): vai em preco_centavos.
+- Preço do CONJUNTO ("5 por 10", "dois por 30", "deu 30 no total", "30 os dois", "10 reais as cinco"): vai em preco_total_centavos, exatamente como foi dito, junto com qtd. Não divida: o aplicativo faz a conta. Nunca peça o preço de cada unidade só porque o preço é do conjunto.
+- Resposta curta a uma pergunta do assistente ("5 por 10", "6 a 4,50", "3") refere-se ao item que a última fala do assistente em "conversa_recente" perguntou. Use o item_id dele.
+- Pedido de conta ("faz o cálculo", "calcula aí", "divide", "e aí, quanto fica?") com quantidade e preço já ditos na "conversa_recente": repita a mesma ação com os valores que a pessoa disse (preco_total_centavos se foi preço do conjunto). Não recuse e não pergunte de novo o que já foi dito.
 - Vários itens na mesma frase viram uma ação por item. "dois de cada" ou "um de cada" vale para todos os itens citados.
 - Frases como "o que falta?", "o que já peguei?", "quanto deu?", "quanto sobrou do orçamento?" são consultas, mesmo faladas de qualquer jeito.
 
@@ -104,7 +107,9 @@ EXEMPLOS (entrada -> ações)
 - "tira o leite e coloca ovo" -> remover_item (leite) + adicionar_item (Ovo)
 - "o que eu já peguei até agora?" -> consultar_comprados
 - "quanto eu já gastei?" -> consultar_total
-- "dois pacotes de macarrão por trinta reais" -> responder pedindo o preço de cada pacote (o preço dito é do conjunto)
+- "dois pacotes de macarrão por trinta reais" -> adicionar_item {nome: "Macarrão", qtd: 2, unidade: "un", preco_total_centavos: 3000}
+- (o assistente perguntou quantas "Maçã" ele levou) "5 por 10" -> marcar_comprado {item da Maçã, qtd: 5, preco_total_centavos: 1000}
+- (a pessoa disse "5 por 10" e o assistente pediu o preço unitário) "faz o cálculo" -> a mesma ação: marcar_comprado {item da Maçã, qtd: 5, preco_total_centavos: 1000}
 - "leite" (só o nome) -> adicionar_item {nome: "Leite"}
 
 REGRAS
@@ -145,9 +150,10 @@ export const SCHEMA_CHAT = {
           unidade: { type: ['string', 'null'], description: '"un" ou "kg". Só em adicionar_item.' },
           item_id: { type: ['string', 'null'], description: 'Id de um item de "itens".' },
           preco_centavos: { type: ['integer', 'null'], description: 'Em marcar_comprado e adicionar_item, só quando o usuário disse o preço. Centavos inteiros.' },
+          preco_total_centavos: { type: ['integer', 'null'], description: 'Em marcar_comprado e adicionar_item, quando o usuário disse o preço do conjunto ("5 por 10"). Centavos inteiros, como dito; não divida.' },
           texto: { type: ['string', 'null'], description: 'Só em responder.' },
         },
-        required: ['tipo', 'nome', 'qtd', 'unidade', 'item_id', 'preco_centavos', 'texto'],
+        required: ['tipo', 'nome', 'qtd', 'unidade', 'item_id', 'preco_centavos', 'preco_total_centavos', 'texto'],
       },
     },
   },

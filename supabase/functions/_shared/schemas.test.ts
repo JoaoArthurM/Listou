@@ -310,6 +310,14 @@ describe('acaoSchema (resposta do Gemini em chat)', () => {
 })
 
 describe('interpretarAcoes', () => {
+  it('aceita o preço do conjunto, sem dividir', () => {
+    const { acoes, descartadas } = interpretarAcoes({
+      acoes: [{ tipo: 'marcar_comprado', item_id: '11111111-1111-4111-8111-111111111111', qtd: 5, preco_total_centavos: 1000, preco_centavos: null }],
+    })
+    expect(descartadas).toBe(0)
+    expect(acoes[0]).toMatchObject({ qtd: 5, preco_total_centavos: 1000 })
+  })
+
   it('ignora os campos que o modelo preenche com null', () => {
     const { acoes, descartadas } = interpretarAcoes({
       acoes: [

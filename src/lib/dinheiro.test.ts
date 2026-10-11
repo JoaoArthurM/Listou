@@ -6,6 +6,7 @@ import {
   formatarValor,
   parseDinheiro,
   parseQuantidade,
+  precoUnitarioDoTotal,
   somarCentavos,
 } from './dinheiro.ts'
 
@@ -124,5 +125,28 @@ describe('somarCentavos', () => {
   it('ignora itens sem preço', () => {
     expect(somarCentavos([500, null, 2490, undefined])).toBe(2990)
     expect(somarCentavos([])).toBe(0)
+  })
+})
+
+describe('precoUnitarioDoTotal', () => {
+  it('divide o preço do conjunto: 5 por R$ 10 = R$ 2,00 cada', () => {
+    expect(precoUnitarioDoTotal(1000, 5)).toEqual({ preco_centavos: 200, total_centavos: 1000, exato: true })
+  })
+
+  it('avisa quando não fecha em centavos: 3 por R$ 10', () => {
+    const r = precoUnitarioDoTotal(1000, 3)
+    expect(r).toEqual({ preco_centavos: 333, total_centavos: 999, exato: false })
+  })
+
+  it('por peso, procura o preço do quilo que bate com o total', () => {
+    const r = precoUnitarioDoTotal(1000, 0.742)
+    expect(r?.exato).toBe(true)
+    expect(r && calcularTotalCentavos(r.preco_centavos, 0.742)).toBe(1000)
+  })
+
+  it('recusa total ou quantidade inválidos', () => {
+    expect(precoUnitarioDoTotal(0, 5)).toBeNull()
+    expect(precoUnitarioDoTotal(1000, 0)).toBeNull()
+    expect(precoUnitarioDoTotal(1, 5)).toBeNull()
   })
 })

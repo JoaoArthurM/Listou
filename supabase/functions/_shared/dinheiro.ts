@@ -96,6 +96,34 @@ export function calcularTotalCentavos(precoCentavos: number, qtd: number): numbe
   return (numerador - (numerador % 1000)) / 1000
 }
 
+/**
+ * "5 por 10": preço do conjunto -> preço de UMA unidade (ou do quilo), em
+ * centavos. A conta é do código, nunca da IA. Procura o preço unitário cujo
+ * total (round(preço × qtd)) bate com o valor dito; se nenhum bate, devolve o
+ * mais próximo com `exato: false` e o total que ele de fato gera, para o
+ * chamador avisar a diferença em vez de escondê-la.
+ */
+export function precoUnitarioDoTotal(
+  totalCentavos: number,
+  qtd: number,
+): { preco_centavos: number; total_centavos: number; exato: boolean } | null {
+  const milesimos = Math.round(qtd * 1000)
+  if (!(totalCentavos > 0) || milesimos <= 0) return null
+  // round(total / qtd) em inteiros, meio centavo para cima.
+  const base = Math.floor((totalCentavos * 2000 + milesimos) / (2 * milesimos))
+  // Menos de 1 centavo por unidade não é preço.
+  if (base < 1) return null
+  let melhor: { preco_centavos: number; total_centavos: number; exato: boolean } | null = null
+  for (const preco of [base, base - 1, base + 1]) {
+    if (preco <= 0) continue
+    const total = calcularTotalCentavos(preco, qtd)
+    const candidato = { preco_centavos: preco, total_centavos: total, exato: total === totalCentavos }
+    if (candidato.exato) return candidato
+    if (!melhor || Math.abs(total - totalCentavos) < Math.abs(melhor.total_centavos - totalCentavos)) melhor = candidato
+  }
+  return melhor
+}
+
 /** Soma ignorando itens ainda sem preço. */
 export function somarCentavos(valores: Array<number | null | undefined>): number {
   let soma = 0
