@@ -21,15 +21,15 @@ type BalaoProps = {
 // cada voz tem cor própria em vez de variar só o tom do cinza.
 const estilos = {
   eu: 'rounded-br-md bg-primary text-primary-foreground',
-  outro: 'rounded-bl-md bg-destaque text-destaque-foreground',
-  assistente: 'rounded-bl-md border border-border bg-card text-foreground shadow-cartao',
+  outro: 'rounded-tl-md bg-destaque text-destaque-foreground',
+  assistente: 'rounded-tl-md border border-border bg-card text-foreground shadow-cartao',
 }
 
 /** Foto de perfil redonda: inicial da pessoa, ou o orbe animado do assistente. */
 export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente'; nome?: string | null; pensando?: boolean }) {
   if (lado === 'assistente') {
     return (
-      <span aria-hidden className="relative mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
+      <span aria-hidden className="relative flex size-8 shrink-0 items-center justify-center rounded-full">
         {/* Anel em degradê girando; o miolo fica parado por cima. */}
         <span
           className={cn('absolute inset-0 rounded-full', pensando ? 'animate-gira-rapido' : 'animate-gira')}
@@ -47,7 +47,7 @@ export function Avatar({ lado, nome, pensando }: { lado: 'outro' | 'assistente';
   return (
     <span
       aria-hidden
-      className="mb-0.5 flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-destaque text-sm font-semibold text-destaque-foreground"
+      className="flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-destaque text-sm font-semibold text-destaque-foreground"
     >
       {inicial || <User className="size-4" />}
     </span>
@@ -60,7 +60,7 @@ export function Balao({ lado, autor, pensando, children, className }: BalaoProps
   return (
     // w-full: dentro de um pai flex o balão encolheria até o texto e os 85% de
     // largura máxima passariam a valer sobre esse tamanho encolhido.
-    <div className={cn('flex w-full items-end gap-2', lado === 'eu' ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex w-full items-start gap-2', lado === 'eu' ? 'justify-end' : 'justify-start')}>
       {lado === 'eu' ? null : <Avatar lado={lado} nome={autor} pensando={pensando} />}
       <div className={cn('flex min-w-0 max-w-[85%] flex-col', lado === 'eu' ? 'items-end' : 'items-start')}>
         {nome ? <span className="mb-1 px-1 text-xs font-medium text-muted-foreground">{nome}</span> : null}
@@ -133,7 +133,7 @@ export function MessageBubble({ mensagem, lista, itens, minha, autor, somenteLei
 
   if (dados?.tipo === 'foto') {
     return (
-      <div className={cn('flex items-end gap-2', minha ? 'justify-end' : 'justify-start')}>
+      <div className={cn('flex items-start gap-2', minha ? 'justify-end' : 'justify-start')}>
         {minha ? null : <Avatar lado="outro" nome={autor} />}
         <div className={cn('flex min-w-0 flex-col', minha ? 'items-end' : 'items-start')}>
           {autor ? <span className="mb-1 px-1 text-xs font-medium text-muted-foreground">{autor}</span> : null}
