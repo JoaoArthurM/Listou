@@ -95,6 +95,12 @@ export default {
           from: { transform: 'translateY(-100%)' },
           to: { transform: 'translateY(100%)' },
         },
+        // Item caindo na cesta da tela de carregamento: some ao passar da borda.
+        cai: {
+          '0%': { transform: 'translateY(-9px)', opacity: '0' },
+          '20%': { opacity: '1' },
+          '65%, 100%': { transform: 'translateY(5px)', opacity: '1' },
+        },
       },
       animation: {
         'folha-sobe': 'folha-sobe 420ms cubic-bezier(0.16, 1, 0.3, 1)',
@@ -107,6 +113,7 @@ export default {
         gira: 'gira 6s linear infinite',
         'gira-rapido': 'gira 1.1s linear infinite',
         varredura: 'varredura 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
+        cai: 'cai 1.5s cubic-bezier(0.5, 0, 0.9, 0.5) infinite',
       },
     },
   },

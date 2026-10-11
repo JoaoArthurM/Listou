@@ -188,8 +188,8 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
       <div ref={rolagem} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
         {isPending ? (
           <div aria-busy className="space-y-3">
-            <div className="h-12 w-2/3 animate-pulso rounded-3xl bg-muted" />
-            <div className="ml-auto h-12 w-1/2 animate-pulso rounded-3xl bg-muted" />
+            <div className="h-12 w-2/3 esqueleto rounded-3xl" />
+            <div className="ml-auto h-12 w-1/2 esqueleto rounded-3xl" />
           </div>
         ) : null}
 

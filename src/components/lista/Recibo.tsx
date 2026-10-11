@@ -70,7 +70,7 @@ export function Recibo({ lista, itens, carregando }: ReciboProps) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
       {carregando ? (
-        <div aria-busy className="h-72 animate-pulso rounded-cartao bg-muted" />
+        <div aria-busy className="h-72 esqueleto rounded-cartao" />
       ) : (
         <article aria-label={`Recibo da compra ${lista.nome}`} className="animate-surge drop-shadow-[0_10px_18px_hsl(var(--sombra)/0.12)]">
           <Serrilha lado="cima" />

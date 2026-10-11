@@ -233,7 +233,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
                 </Button>
               </>
             ) : (
-              <div aria-busy className="h-32 animate-pulso rounded-2xl bg-muted" />
+              <div aria-busy className="h-32 esqueleto rounded-2xl" />
             )}
           </Secao>
         )}

@@ -83,6 +83,6 @@ export function FotoEtiqueta({ src, alt = 'Foto da etiqueta', children, classNam
 /** Foto guardada no Storage (bucket privado): busca o link temporário e mostra. */
 export function FotoArmazenada({ caminho, className }: { caminho: string; className?: string }) {
   const { data: url, isPending } = useFotoUrl(caminho)
-  if (isPending) return <div aria-hidden className={cn('size-40 animate-pulso rounded-3xl bg-muted', className)} />
+  if (isPending) return <div aria-hidden className={cn('size-40 esqueleto rounded-3xl', className)} />
   return <FotoEtiqueta src={url ?? null} className={className} />
 }

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Carregando } from '@/components/layout/Carregando'
 import { Moldura } from '@/components/layout/Moldura'
 import { Button } from '@/components/ui/button'
 import { useSessao } from '@/hooks/sessao'
@@ -71,9 +72,9 @@ export function App() {
   if (carregando) {
     return (
       <Moldura>
-        <div role="status" className="grid flex-1 place-items-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6">
           <span className="font-display text-[4rem] italic leading-none">Listou</span>
-          <span className="sr-only">Carregando</span>
+          <Carregando />
         </div>
       </Moldura>
     )

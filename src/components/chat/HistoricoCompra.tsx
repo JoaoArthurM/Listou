@@ -94,8 +94,8 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
       {isPending ? (
         <div aria-busy className="space-y-3">
-          <div className="h-16 animate-pulso rounded-cartao bg-muted" />
-          <div className="h-16 animate-pulso rounded-cartao bg-muted" />
+          <div className="h-16 esqueleto rounded-cartao" />
+          <div className="h-16 esqueleto rounded-cartao" />
         </div>
       ) : dias.length === 0 ? (
         <div className="px-1 pt-8">

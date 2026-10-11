@@ -336,6 +336,25 @@
   }
 }
 
+/* Bloco de conteúdo que ainda não chegou: fundo suave com um brilho passando. */
+.esqueleto {
+  background-color: hsl(var(--muted));
+  background-image: linear-gradient(100deg, transparent 25%, hsl(var(--card) / 0.8) 50%, transparent 75%);
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  animation: esqueleto-brilho 1.5s ease-in-out infinite;
+}
+
+@keyframes esqueleto-brilho {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

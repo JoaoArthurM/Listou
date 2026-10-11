@@ -123,7 +123,7 @@ export function Listas() {
         {estado !== 'online' ? <StatusConexao className="mb-4" /> : null}
 
         {isPending ? (
-          <div aria-busy className="h-[19rem] animate-pulso rounded-[1.75rem] bg-muted" />
+          <div aria-busy className="h-[19rem] esqueleto rounded-[1.75rem]" />
         ) : isError && !listas ? (
           <div className="pt-8">
             <p className="text-[1rem] leading-snug">Não deu para carregar suas listas. Confira a conexão.</p>

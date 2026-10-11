@@ -68,8 +68,8 @@ export function Historico() {
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-6">
         {isPending ? (
           <div aria-busy className="space-y-3">
-            <div className="h-[4.5rem] animate-pulso rounded-cartao bg-muted" />
-            <div className="h-[4.5rem] animate-pulso rounded-cartao bg-muted" />
+            <div className="h-[4.5rem] esqueleto rounded-cartao" />
+            <div className="h-[4.5rem] esqueleto rounded-cartao" />
           </div>
         ) : isError && !listas ? (
           <div className="pt-6">

@@ -180,7 +180,7 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
         {aviso ? <Dica>{aviso}</Dica> : null}
 
         {carregando ? (
-          <div aria-busy className="h-48 animate-pulso rounded-cartao bg-muted" />
+          <div aria-busy className="h-48 esqueleto rounded-cartao" />
         ) : itens.length === 0 ? (
           <div className="px-2 pt-10">
             <p className="font-display text-[2.125rem] italic leading-none">Lista em branco</p>

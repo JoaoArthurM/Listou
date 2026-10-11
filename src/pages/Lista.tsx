@@ -44,8 +44,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         </div>
         {isPending ? (
           <div aria-busy className="space-y-4 px-5 pt-6">
-            <div className="mx-auto h-6 w-40 animate-pulso rounded-full bg-muted" />
-            <div className="h-48 animate-pulso rounded-cartao bg-muted" />
+            <div className="mx-auto h-6 w-40 esqueleto rounded-full" />
+            <div className="h-48 esqueleto rounded-cartao" />
           </div>
         ) : (
           <div className="px-6 pt-12">
