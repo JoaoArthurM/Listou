@@ -155,7 +155,27 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
       aoAbrir={(i) => setEditando(i.id)}
       aoExcluir={(i) => {
         remover.mutate({ id: i.id, lista_id: i.lista_id })
-        avisar(`“${i.nome}” removido.`)
+        // Desfazer põe o item de volta com o mesmo id e o que ele já tinha (preço, quantidade, seção).
+        avisar(`“${i.nome}” removido.`, 'info', {
+          rotulo: 'Desfazer',
+          aoClicar: () =>
+            adicionar.mutate({
+              id: i.id,
+              lista_id: i.lista_id,
+              nome: i.nome,
+              unidade: i.unidade,
+              qtd_planejada: i.qtd_planejada,
+              secao: i.secao,
+              adicionado_por: i.adicionado_por ?? undefined,
+              comprado: i.comprado,
+              faixas_preco: i.faixas_preco,
+              faixa_aplicada: i.faixa_aplicada,
+              preco_unit_centavos: i.preco_unit_centavos,
+              qtd_comprada: i.qtd_comprada,
+              foto_path: i.foto_path,
+              origem_preco: i.origem_preco,
+            }),
+        })
       }}
     />
   )

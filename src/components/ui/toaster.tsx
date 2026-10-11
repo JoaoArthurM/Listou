@@ -15,19 +15,35 @@ export function Toaster() {
       {avisos.map((aviso) => {
         const Icone = icones[aviso.tipo]
         return (
-          <button
+          <div
             key={aviso.id}
-            type="button"
             role={aviso.tipo === 'erro' ? 'alert' : 'status'}
-            onClick={() => dispensarAviso(aviso.id)}
-            className="pointer-events-auto flex max-w-full animate-surge items-start gap-2.5 rounded-3xl bg-moldura px-4 py-3 text-left text-[0.9375rem] leading-snug text-moldura-foreground shadow-flutuante"
+            className="pointer-events-auto flex max-w-full animate-surge items-center gap-1 rounded-3xl bg-moldura text-[0.9375rem] leading-snug text-moldura-foreground shadow-flutuante"
           >
-            <Icone
-              aria-hidden
-              className={cn('mt-0.5 size-4 shrink-0', aviso.tipo === 'erro' ? 'text-destaque' : 'text-primary')}
-            />
-            <span>{aviso.texto}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => dispensarAviso(aviso.id)}
+              className="flex min-w-0 items-start gap-2.5 py-3 pl-4 pr-4 text-left"
+            >
+              <Icone
+                aria-hidden
+                className={cn('mt-0.5 size-4 shrink-0', aviso.tipo === 'erro' ? 'text-destaque' : 'text-primary')}
+              />
+              <span>{aviso.texto}</span>
+            </button>
+            {aviso.acao ? (
+              <button
+                type="button"
+                onClick={() => {
+                  aviso.acao?.aoClicar()
+                  dispensarAviso(aviso.id)
+                }}
+                className="mr-1.5 shrink-0 rounded-full px-3 py-2 text-[0.9375rem] font-semibold text-destaque"
+              >
+                {aviso.acao.rotulo}
+              </button>
+            ) : null}
+          </div>
         )
       })}
     </div>
