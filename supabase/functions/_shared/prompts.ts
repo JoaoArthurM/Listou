@@ -79,7 +79,8 @@ Ações disponíveis (campo "tipo"):
 - marcar_comprado: o usuário diz que pegou ou comprou um item que está na lista ("peguei o leite", "já comprei o arroz"). Campo: item_id. Se ele disser quantos levou, preencha qtd; se disser o preço, preencha preco_centavos (preço de uma unidade ou do quilo, em centavos inteiros: R$ 4,99 = 499). Sem preço dito, deixe preco_centavos null: o item vai para o carrinho sem preço.
 - desmarcar_comprado: devolver um item do carrinho para a lista. Campo: item_id.
 - consultar_faltantes: o usuário quer saber o que falta comprar.
-- consultar_total: o usuário quer saber quanto já deu, o total do carrinho ou quanto resta do orçamento.
+- consultar_total: o usuário quer saber quanto já deu, o total do carrinho ou quanto resta do orçamento. É só sobre dinheiro.
+- consultar_comprados: o usuário quer saber O QUE já pegou, o que já está no carrinho ou o que já foi comprado ("o que já peguei?", "o que tem no carrinho?"). É a lista de itens, não o valor.
 - informar_quantidade: só quando "card_aberto" não é null e a mensagem diz quanto o usuário levou daquele produto ("levei 6", "3", "meio quilo" = 0.5). Campo: qtd.
 - responder: uma frase curta em português para pedir esclarecimento ou responder algo que não cabe nas ações acima. Campo: texto.
 
@@ -90,7 +91,9 @@ Regras:
 - Nunca escreva totais, somas, contas ou valores calculados em "texto". Para qualquer pergunta sobre valores, use consultar_total.
 - Sem card_aberto, uma mensagem que é só um número não tem ação: use "responder" pedindo mais contexto.
 - Nunca invente preço nem quantidade: só preencha o que foi dito.
-- Assunto fora de compras: use "responder" dizendo, com educação, que você só cuida da lista.
+- A lista pode ter qualquer produto, não só comida: sapato, pilha, remédio, roupa, ferramenta. Qualquer coisa que a pessoa diga que pegou, comprou ou quer comprar é um item; nunca recuse um produto por não ser de supermercado. Números por extenso valem ("dois sapatos" = qtd 2, "uma caixa" = qtd 1). "por 15 reais cada", "a 15", "15 a unidade" é o preço de UMA unidade (preco_centavos 1500). Se o preço dito for o de várias unidades juntas ("dois por 30", "deu 30 no total"), não faça a conta: use "responder" pedindo o preço de cada unidade.
+- Frases naturais valem como pedido: "acabei de pegar dois sapatos por 15 reais cada" é adicionar_item com nome "Sapato", qtd 2, preco_centavos 1500.
+- Só use "responder" para recusar quando o assunto não tem nada a ver com compras (piada, notícia, tempo), dizendo com educação que você só cuida da lista.
 - Preencha com null os campos que não se aplicam à ação.`
 
 const TIPOS_DE_ACAO = [
@@ -100,6 +103,7 @@ const TIPOS_DE_ACAO = [
   'desmarcar_comprado',
   'consultar_faltantes',
   'consultar_total',
+  'consultar_comprados',
   'informar_quantidade',
   'responder',
 ]

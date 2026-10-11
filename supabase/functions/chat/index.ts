@@ -126,26 +126,47 @@ async function aplicarQuantidade(
   return `${nome}: ${linhaCalculo(qtd, extracao.unidade, compra.faixa.preco_centavos, compra.faixa.tipo, compra.faixa.cartao)}.`
 }
 
+/** Título seguido de um marcador por item: tudo que o assistente diz sai em tópicos. */
+const comTopicos = (titulo: string, itens: string[]) => `${titulo}\n${itens.map((i) => `• ${i}`).join('\n')}`
+
 /** Total e orçamento, sempre lidos do banco (nunca um número vindo da IA). */
-async function textoDoTotal(ctx: Contexto, lista: Lista): Promise<string> {
+async function textoDoTotal(ctx: Contexto, lista: Lista): Promise<string[]> {
   const { data, error } = await ctx.doUsuario
     .from('lista_totais')
     .select('total_centavos, itens_comprados, itens_total')
     .eq('lista_id', lista.id)
     .maybeSingle()
   if (error) throw error
-  if (!data || !data.itens_total) return 'A lista ainda está vazia.'
+  if (!data || !data.itens_total) return ['A lista ainda está vazia.']
 
   const total = data.total_centavos ?? 0
-  let texto = `Carrinho: ${formatarReais(total)}, com ${data.itens_comprados} de ${data.itens_total} ${data.itens_total === 1 ? 'item' : 'itens'}.`
+  const linhas = [`Carrinho: ${formatarReais(total)}, com ${data.itens_comprados} de ${data.itens_total} ${data.itens_total === 1 ? 'item' : 'itens'}.`]
   if (lista.orcamento_centavos !== null) {
     const saldo = lista.orcamento_centavos - total
-    texto +=
+    linhas.push(
       saldo >= 0
-        ? ` Restam ${formatarReais(saldo)} do orçamento de ${formatarReais(lista.orcamento_centavos)}.`
-        : ` Passou ${formatarReais(-saldo)} do orçamento de ${formatarReais(lista.orcamento_centavos)}.`
+        ? `Restam ${formatarReais(saldo)} do orçamento de ${formatarReais(lista.orcamento_centavos)}.`
+        : `Passou ${formatarReais(-saldo)} do orçamento de ${formatarReais(lista.orcamento_centavos)}.`,
+    )
   }
-  return texto
+  return linhas
+}
+
+/** O que já está no carrinho, com quantidade e total de cada item vindos do banco. */
+async function textoDosComprados(ctx: Contexto, listaId: string): Promise<string> {
+  const { data, error } = await ctx.doUsuario
+    .from('itens')
+    .select('nome, unidade, qtd_comprada, total_centavos')
+    .eq('lista_id', listaId)
+    .eq('comprado', true)
+    .order('comprado_em')
+  if (error) throw error
+  if (data.length === 0) return 'Ainda não há nada no carrinho.'
+  const linha = (i: { nome: string; unidade: Unidade; qtd_comprada: number | null; total_centavos: number | null }) => {
+    const qtd = i.qtd_comprada === null ? '' : ` (${formatarQuantidade(i.qtd_comprada, i.unidade)}${i.unidade === 'un' ? ' un' : ''})`
+    return `${i.nome}${qtd}: ${i.total_centavos === null ? 'sem preço' : formatarReais(i.total_centavos)}`
+  }
+  return comTopicos(`No carrinho (${data.length}):`, data.map(linha))
 }
 
 Deno.serve(async (req) => {
@@ -267,6 +288,7 @@ Deno.serve(async (req) => {
     let qtdDoCard: number | null = null
     let querFaltantes = false
     let querTotal = false
+    let querComprados = false
 
     for (const acao of acoes) {
       switch (acao.tipo) {
@@ -337,6 +359,9 @@ Deno.serve(async (req) => {
         case 'consultar_total':
           querTotal = true
           break
+        case 'consultar_comprados':
+          querComprados = true
+          break
         case 'responder':
           falas.push(frase(acao.texto))
           break
@@ -349,7 +374,7 @@ Deno.serve(async (req) => {
     if (novos.length > 0) {
       const { data: criados, error } = await ctx.doUsuario.from('itens').insert(novos).select('id')
       if (error) throw error
-      linhas.push(`Adicionei: ${novos.map(comQuantidade).join(', ')}.`)
+      linhas.push(comTopicos('Adicionei:', novos.map(comQuantidade)))
       // Com preço dito, a conta precisa de quantidade dita; não se presume "1".
       comPreco.forEach(({ qtd, preco_centavos }, indice) => {
         const nome = novos[indice]!.nome
@@ -358,14 +383,14 @@ Deno.serve(async (req) => {
         else if (id) propostas.push({ tipo: 'marcar_comprado', item_id: id, nome, unidade: novos[indice]!.unidade, qtd, preco_centavos })
       })
     }
-    if (repetidos.length > 0) linhas.push(`Já ${repetidos.length === 1 ? 'estava' : 'estavam'} na lista: ${repetidos.join(', ')}.`)
+    if (repetidos.length > 0) linhas.push(comTopicos(`Já ${repetidos.length === 1 ? 'estava' : 'estavam'} na lista:`, repetidos))
 
     if (paraOCarrinho.length > 0) {
       for (const { item, qtd } of paraOCarrinho) {
         const { error } = await ctx.doUsuario.from('itens').update({ comprado: true, qtd_comprada: qtd }).eq('id', item.id)
         if (error) throw error
       }
-      linhas.push(`No carrinho, sem preço: ${paraOCarrinho.map((p) => p.item.nome).join(', ')}.`)
+      linhas.push(comTopicos('No carrinho, sem preço:', paraOCarrinho.map((p) => p.item.nome)))
     }
 
     if (qtdDoCard !== null) linhas.push(await aplicarQuantidade(ctx, lista, itens, card, qtdDoCard))
@@ -383,10 +408,12 @@ Deno.serve(async (req) => {
       const faltando = (data as ItemDaLista[]).filter((i) => !i.comprado)
       if (data.length === 0) linhas.push('A lista ainda está vazia.')
       else if (faltando.length === 0) linhas.push('Não falta nada: está tudo no carrinho.')
-      else linhas.push(`Falta comprar (${faltando.length}): ${faltando.map(comQuantidade).join(', ')}.`)
+      else linhas.push(comTopicos(`Falta comprar (${faltando.length}):`, faltando.map(comQuantidade)))
     }
 
-    if (querTotal) linhas.push(await textoDoTotal(ctx, lista))
+    if (querComprados) linhas.push(await textoDosComprados(ctx, lista_id))
+
+    if (querTotal) linhas.push(...(await textoDoTotal(ctx, lista)))
 
     linhas.push(...falas)
 
@@ -395,7 +422,8 @@ Deno.serve(async (req) => {
     }
     if (linhas.length === 0 && propostas.length === 0) linhas.push('Não entendi o pedido. Pode dizer de outro jeito?')
 
-    if (linhas.length > 0) await responder(ctx, lista_id, linhas.join('\n'))
+    // Toda resposta sai em tópicos: cada fala ganha um marcador; as listas já vêm com um por item.
+    if (linhas.length > 0) await responder(ctx, lista_id, linhas.map((l) => (l.includes('\n') ? l : `• ${l}`)).join('\n'))
 
     if (propostas.length > 0) {
       const dados: DadosProposta = { tipo: 'proposta', estado: 'pendente', acoes: propostas }

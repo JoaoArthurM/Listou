@@ -200,6 +200,7 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('desmarcar_comprado'), item_id: uuid }),
   z.object({ tipo: z.literal('consultar_faltantes') }),
   z.object({ tipo: z.literal('consultar_total') }),
+  z.object({ tipo: z.literal('consultar_comprados') }),
   z.object({ tipo: z.literal('informar_quantidade'), qtd: quantidade }),
   z.object({ tipo: z.literal('responder'), texto: z.string().trim().min(1).max(600) }),
 ])

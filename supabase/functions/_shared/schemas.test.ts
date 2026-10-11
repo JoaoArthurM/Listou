@@ -329,6 +329,10 @@ describe('interpretarAcoes', () => {
     expect(acoes).toEqual([{ tipo: 'adicionar_item', nome: 'Ovo', qtd: 1, unidade: 'un', preco_centavos: 1230 }])
   })
 
+  it('aceita a consulta do que já está no carrinho', () => {
+    expect(acaoSchema.safeParse({ tipo: 'consultar_comprados' }).success).toBe(true)
+  })
+
   it('rejeita preço negativo em item novo', () => {
     expect(acaoSchema.safeParse({ tipo: 'adicionar_item', nome: 'Ovo', preco_centavos: -1 }).success).toBe(false)
   })
