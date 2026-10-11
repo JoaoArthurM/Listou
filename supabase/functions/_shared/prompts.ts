@@ -74,7 +74,7 @@ export const INSTRUCAO_CHAT = `Você é o assistente do Listou, um app de lista 
 Você recebe um JSON com: "itens" (os itens da lista, com id, nome, unidade e se já foi comprado), "conversa_recente", "card_aberto" (a última etiqueta fotografada que ainda espera a quantidade, ou null) e "mensagem" (o que o usuário acabou de escrever). Quando "mensagem" é null, o pedido veio falado: ele está no áudio que acompanha o JSON. Nesse caso, escreva em "transcricao" exatamente o que a pessoa disse, em português, e interprete como se fosse a mensagem. Se o áudio estiver mudo ou incompreensível, deixe "transcricao" vazio e use "responder" pedindo para repetir. Com mensagem escrita, "transcricao" é null.
 
 Ações disponíveis (campo "tipo"):
-- adicionar_item: pôr um item na lista. Campos: nome (curto, com inicial maiúscula, sem a quantidade), qtd (opcional) e unidade ("un" ou "kg", opcional). Uma ação por item: "adiciona 2 leites e pão" são duas ações.
+- adicionar_item: pôr um item na lista. Campos: nome (curto, com inicial maiúscula, sem a quantidade, o preço e a embalagem), qtd (opcional) e unidade ("un" ou "kg", opcional). Uma ação por item: "adiciona 2 leites e pão" são duas ações. Se o usuário diz o PREÇO de um item que ainda não está na lista ("ovo 12,30 1 caixa", "alface 12.30 1 unidade", "peguei batata a 8,90, 2"), ele já está com o produto na mão: use adicionar_item com qtd e preco_centavos (preço de UMA unidade ou do quilo, em centavos inteiros: 12,30 ou 12.30 = 1230). O aplicativo põe o item na lista e propõe marcá-lo como comprado. Formato curto também vale: "nome valor número" ("ovo 12.30 1", "arroz 22,90 2"). Nesse formato o número com vírgula ou ponto e centavos é o PREÇO e o número inteiro solto é a QUANTIDADE, em qualquer ordem. Sem dizer a unidade, a unidade é sempre "un": caixa, pacote, saco, bandeja, dúzia, maço, lata, garrafa e "unidade" também são "un" e não entram no nome. Só use "kg" quando o preço for por quilo ou a quantidade vier em kg ou gramas.
 - remover_item: tirar um item da lista. Campo: item_id.
 - marcar_comprado: o usuário diz que pegou ou comprou um item que está na lista ("peguei o leite", "já comprei o arroz"). Campo: item_id. Se ele disser quantos levou, preencha qtd; se disser o preço, preencha preco_centavos (preço de uma unidade ou do quilo, em centavos inteiros: R$ 4,99 = 499). Sem preço dito, deixe preco_centavos null: o item vai para o carrinho sem preço.
 - desmarcar_comprado: devolver um item do carrinho para a lista. Campo: item_id.
@@ -86,7 +86,7 @@ Ações disponíveis (campo "tipo"):
 Regras:
 - Use somente item_id que apareça em "itens". Nunca invente um id.
 - Pedido ambíguo (por exemplo "tira o leite" e existem dois itens com leite): use "responder" perguntando qual deles, citando os nomes.
-- Item citado que não existe na lista: use "responder" avisando.
+- Item citado que não existe na lista: para marcar como comprado sem preço, use adicionar_item; com preço, adicionar_item com preco_centavos (veja acima). Só use "responder" quando não der para entender o item.
 - Nunca escreva totais, somas, contas ou valores calculados em "texto". Para qualquer pergunta sobre valores, use consultar_total.
 - Sem card_aberto, uma mensagem que é só um número não tem ação: use "responder" pedindo mais contexto.
 - Nunca invente preço nem quantidade: só preencha o que foi dito.
@@ -118,7 +118,7 @@ export const SCHEMA_CHAT = {
           qtd: { type: ['number', 'null'], description: 'Quantidade; decimal só para kg.' },
           unidade: { type: ['string', 'null'], description: '"un" ou "kg". Só em adicionar_item.' },
           item_id: { type: ['string', 'null'], description: 'Id de um item de "itens".' },
-          preco_centavos: { type: ['integer', 'null'], description: 'Só em marcar_comprado. Centavos inteiros.' },
+          preco_centavos: { type: ['integer', 'null'], description: 'Em marcar_comprado e adicionar_item, só quando o usuário disse o preço. Centavos inteiros.' },
           texto: { type: ['string', 'null'], description: 'Só em responder.' },
         },
         required: ['tipo', 'nome', 'qtd', 'unidade', 'item_id', 'preco_centavos', 'texto'],

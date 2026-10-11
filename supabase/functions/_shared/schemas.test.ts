@@ -321,6 +321,18 @@ describe('interpretarAcoes', () => {
     expect(acoes).toEqual([{ tipo: 'adicionar_item', nome: 'Leite', qtd: 2 }, { tipo: 'consultar_total' }])
   })
 
+  it('aceita item novo com preço dito ("ovo 12,30 1 caixa")', () => {
+    const { acoes, descartadas } = interpretarAcoes({
+      acoes: [{ tipo: 'adicionar_item', nome: 'Ovo', qtd: 1, unidade: 'un', item_id: null, preco_centavos: 1230, texto: null }],
+    })
+    expect(descartadas).toBe(0)
+    expect(acoes).toEqual([{ tipo: 'adicionar_item', nome: 'Ovo', qtd: 1, unidade: 'un', preco_centavos: 1230 }])
+  })
+
+  it('rejeita preço negativo em item novo', () => {
+    expect(acaoSchema.safeParse({ tipo: 'adicionar_item', nome: 'Ovo', preco_centavos: -1 }).success).toBe(false)
+  })
+
   it('descarta só a ação inválida e conta quantas saíram', () => {
     const { acoes, descartadas } = interpretarAcoes({
       acoes: [{ tipo: 'adicionar_item', nome: 'Pão' }, { tipo: 'remover_item', item_id: 'arroz' }, 'lixo'],

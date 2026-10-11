@@ -257,6 +257,8 @@ Deno.serve(async (req) => {
 
     const porId = new Map(itens.map((i) => [i.id, i]))
     const novos: Array<{ lista_id: string; nome: string; unidade: Unidade; qtd_planejada: number | null }> = []
+    // Itens novos que já vêm com preço dito: depois de gravados, viram proposta de compra.
+    const comPreco = new Map<number, { qtd: number | null; preco_centavos: number }>()
     const repetidos: string[] = []
     const propostas: AcaoProposta[] = []
     const paraOCarrinho: Array<{ item: ItemDaLista; qtd: number | null }> = []
@@ -282,6 +284,7 @@ Deno.serve(async (req) => {
           const qtd = acao.qtd !== undefined && (unidade === 'kg' || Number.isInteger(acao.qtd)) ? acao.qtd : null
           // Quantidade que não fecha com a unidade não é arredondada nem trocada: fica sem, e avisa.
           if (acao.qtd !== undefined && qtd === null) avisos.push(`Não entendi a quantidade de “${nome}”: entrou na lista sem quantidade.`)
+          if (acao.preco_centavos !== undefined) comPreco.set(novos.length, { qtd, preco_centavos: acao.preco_centavos })
           novos.push({ lista_id, nome, unidade, qtd_planejada: qtd })
           break
         }
@@ -344,9 +347,16 @@ Deno.serve(async (req) => {
     const linhas: string[] = []
 
     if (novos.length > 0) {
-      const { error } = await ctx.doUsuario.from('itens').insert(novos)
+      const { data: criados, error } = await ctx.doUsuario.from('itens').insert(novos).select('id')
       if (error) throw error
       linhas.push(`Adicionei: ${novos.map(comQuantidade).join(', ')}.`)
+      // Com preço dito, a conta precisa de quantidade dita; não se presume "1".
+      comPreco.forEach(({ qtd, preco_centavos }, indice) => {
+        const nome = novos[indice]!.nome
+        const id = criados?.[indice]?.id as string | undefined
+        if (qtd === null) avisos.push(`Quantos “${nome}” você levou? Diga a quantidade junto com o preço.`)
+        else if (id) propostas.push({ tipo: 'marcar_comprado', item_id: id, nome, unidade: novos[indice]!.unidade, qtd, preco_centavos })
+      })
     }
     if (repetidos.length > 0) linhas.push(`Já ${repetidos.length === 1 ? 'estava' : 'estavam'} na lista: ${repetidos.join(', ')}.`)
 

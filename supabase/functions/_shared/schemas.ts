@@ -185,6 +185,9 @@ export const acaoSchema = z.discriminatedUnion('tipo', [
     nome: z.string().trim().min(1).max(80),
     qtd: quantidade.optional(),
     unidade: unidade.optional(),
+    // Item que não estava na lista e o usuário já pegou, dizendo o preço
+    // ("ovo 12,30 1 caixa"): entra na lista e vira proposta de compra.
+    preco_centavos: centavos.optional(),
   }),
   z.object({ tipo: z.literal('remover_item'), item_id: uuid }),
   // Sem preço, só põe o item no carrinho (fica fora do total até alguém informar).
