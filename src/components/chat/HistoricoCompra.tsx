@@ -3,6 +3,7 @@ import { useMemo, type ReactNode } from 'react'
 import { useUsuario } from '@/hooks/sessao'
 import { useMembros } from '@/hooks/useListas'
 import { useMensagens } from '@/hooks/useMensagens'
+import { chaveDoDia } from '@/lib/datas'
 import { linhaCalculo } from '@/lib/precos'
 import { primeiroNome } from '@/lib/utils'
 import type { Lista, Mensagem } from '@/types/app'
@@ -11,7 +12,6 @@ type HistoricoCompraProps = { lista: Lista }
 
 const diaSemana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
 const hora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
-const chaveDoDia = (quando: Date) => `${quando.getFullYear()}-${quando.getMonth()}-${quando.getDate()}`
 
 type Registro = { id: string; quem: 'eu' | 'assistente' | 'outro'; rotulo: string; quando: Date; corpo: ReactNode }
 

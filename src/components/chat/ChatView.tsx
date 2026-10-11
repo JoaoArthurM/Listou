@@ -11,6 +11,7 @@ import type { AoVivo } from '@/hooks/useRealtime'
 import { chaves, enviarAoChat, enviarVozAoChat } from '@/lib/api'
 import { avisar } from '@/lib/avisos'
 import { descartarFoto, fotografarEtiqueta, tentarFotoDeNovo, useFilaDeFotos } from '@/lib/filaDeFotos'
+import { chaveDoDia, horaCurta, rotuloDoDia } from '@/lib/datas'
 import { fecharTeclado } from '@/lib/teclado'
 import { listarNomes, primeiroNome } from '@/lib/utils'
 import { gravar, vozDisponivel, type Gravacao } from '@/lib/voz'
@@ -219,18 +220,38 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
         ) : null}
 
         <ol className="space-y-3">
-          {mensagens?.map((mensagem) => (
-            <li key={mensagem.id}>
-              <MessageBubble
-                mensagem={mensagem}
-                lista={lista}
-                itens={itens}
-                minha={mensagem.autor_id === usuario.id}
-                autor={nomeDe(mensagem.autor_id)}
-                somenteLeitura={somenteLeitura}
-              />
-            </li>
-          ))}
+          {mensagens?.map((mensagem, i) => {
+            const quando = new Date(mensagem.criado_em)
+            const anterior = i > 0 ? mensagens[i - 1] : null
+            const novoDia = !anterior || chaveDoDia(new Date(anterior.criado_em)) !== chaveDoDia(quando)
+            const minha = mensagem.autor_id === usuario.id
+            return (
+              <li key={mensagem.id}>
+                {novoDia ? (
+                  <p className="mb-3 mt-1 flex justify-center">
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium capitalize text-muted-foreground">
+                      {rotuloDoDia(quando)}
+                    </span>
+                  </p>
+                ) : null}
+                <MessageBubble
+                  mensagem={mensagem}
+                  lista={lista}
+                  itens={itens}
+                  minha={minha}
+                  autor={nomeDe(mensagem.autor_id)}
+                  somenteLeitura={somenteLeitura}
+                />
+                {/* Hora do envio, sob a mensagem e do lado dela (à esquerda, depois do avatar). */}
+                <time
+                  dateTime={quando.toISOString()}
+                  className={`dinheiro mt-0.5 block text-[0.6875rem] text-muted-foreground ${minha ? 'pr-1 text-right' : 'pl-10'}`}
+                >
+                  {horaCurta(quando)}
+                </time>
+              </li>
+            )
+          })}
 
           {visiveis.map((pendente) => (
             <li key={pendente.id} className="flex animate-surge flex-col items-end gap-1.5">
