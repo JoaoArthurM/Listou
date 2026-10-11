@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Clock, Mic, RotateCcw } from 'lucide-react'
+import { ArrowUp, ArrowUpRight, Clock, Mic, RotateCcw } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
@@ -168,6 +168,10 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     autorId && autorId !== usuario.id ? primeiroNome(membros.find((m) => m.perfil_id === autorId)?.nome) || null : null
 
   const vazio = !isPending && total === 0
+  // Atalhos: campo vazio e a última fala é da IA (sem nada a caminho).
+  const ultima = mensagens?.[mensagens.length - 1]
+  const mostrarAtalhos =
+    !gravacao && texto.trim() === '' && ultima?.papel === 'assistente' && visiveis.length === 0 && !esperandoIA
   const podeFalar = vozDisponivel()
 
   return (
@@ -308,6 +312,22 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             <p role="status" className="mb-2 px-2 text-sm text-muted-foreground">
               Sem conexão. As fotos de etiqueta ficam na fila e são lidas quando o sinal voltar; texto e voz precisam dele.
             </p>
+          ) : null}
+          {mostrarAtalhos ? (
+            <div className="-mx-3 mb-2.5 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
+              {SUGESTOES.map((sugestao) => (
+                <button
+                  key={sugestao}
+                  type="button"
+                  disabled={offline}
+                  onClick={() => enfileirar({ id: crypto.randomUUID(), tipo: 'texto', texto: sugestao, erro: null, antes: idsAtuais() })}
+                  className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-controle/70 bg-card pl-4 pr-3 text-[0.9375rem] font-medium transition-colors active:bg-muted disabled:opacity-50"
+                >
+                  {sugestao}
+                  <ArrowUpRight aria-hidden className="size-4 text-primary-texto" strokeWidth={2.4} />
+                </button>
+              ))}
+            </div>
           ) : null}
           {gravacao ? (
             <Gravador
