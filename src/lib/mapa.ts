@@ -53,3 +53,20 @@ export function agruparPorMercado(compras: CompraNoMapa[]): MercadoNoMapa[] {
     return { lat: ultima.lat, lng: ultima.lng, nome: ultima.mercado?.trim() || ultima.nome, ultima, compras: g }
   })
 }
+
+const RAIO_DO_MERCADO_M = 150
+
+/**
+ * Nome do mercado já conhecido onde a pessoa está: o do mercado mais perto,
+ * a até 150 m, que tenha nome escrito. Null se não há nenhum por ali.
+ */
+export function mercadoConhecidoPerto(compras: CompraNoMapa[], ponto: Ponto): string | null {
+  let melhor: { nome: string; d: number } | null = null
+  for (const m of agruparPorMercado(compras)) {
+    const nome = m.ultima.mercado?.trim()
+    if (!nome) continue
+    const d = distanciaEmMetros(m, ponto)
+    if (d <= RAIO_DO_MERCADO_M && (!melhor || d < melhor.d)) melhor = { nome, d }
+  }
+  return melhor?.nome ?? null
+}

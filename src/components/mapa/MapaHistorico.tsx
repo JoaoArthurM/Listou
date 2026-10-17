@@ -1,4 +1,4 @@
-import { ChevronRight, MapPin, MapPinOff, Pencil, X } from 'lucide-react'
+import { ChevronRight, MapPin, MapPinOff, X } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useMoverMercado } from '@/hooks/useListas'
@@ -15,8 +15,8 @@ const MapaCompras = lazy(() => import('./MapaCompras'))
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
 
-/** O que a compra custou de verdade: o que o caixa cobrou, se a pessoa disse; senão a soma do app. */
-const valorDaCompra = (l: ListaComResumo) => l.total_pago_centavos ?? l.resumo.total_centavos
+/** Valor da compra toda: a soma dos itens (não o que o caixa cobrou, que só aparece no recibo). */
+const valorDaCompra = (l: ListaComResumo) => l.resumo.total_centavos
 const quandoDaCompra = (l: ListaComResumo) => l.finalizada_em ?? l.criado_em
 
 type Edicao = { listaId: string; nome: string; ponto: Ponto | null }
@@ -165,8 +165,9 @@ export function MapaHistorico({ listas }: { listas: ListaComResumo[] }) {
                   <span className="dinheiro shrink-0 text-[1rem] font-medium">{formatarReais(c.total_centavos)}</span>
                   <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                 </a>
-                <Button variant="ghost" size="icon" aria-label={`Corrigir o local de ${c.nome}`} onClick={() => editar(c, { lat: c.lat, lng: c.lng })}>
-                  <Pencil className="size-4" />
+                <Button variant="secondary" size="sm" aria-label={`Mover o local de ${c.nome} no mapa`} onClick={() => editar(c, { lat: c.lat, lng: c.lng })}>
+                  <MapPin aria-hidden className="size-4" />
+                  Mover
                 </Button>
               </li>
             ))}

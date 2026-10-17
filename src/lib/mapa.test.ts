@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agruparPorMercado, type CompraNoMapa } from './mapa'
+import { agruparPorMercado, mercadoConhecidoPerto, type CompraNoMapa } from './mapa'
 import { distanciaEmMetros } from './mercados'
 
 const compra = (id: string, quando: string, lat: number, lng: number, mercado: string | null = 'Atacadão'): CompraNoMapa => ({
@@ -43,5 +43,18 @@ describe('distanciaEmMetros', () => {
     const d = distanciaEmMetros({ lat: -16.6, lng: -49.2 }, { lat: -16.601, lng: -49.2 })
     expect(d).toBeGreaterThan(105)
     expect(d).toBeLessThan(117)
+  })
+})
+
+describe('mercadoConhecidoPerto', () => {
+  const compras = [compra('a', '2026-09-01', -16.6, -49.2, 'Atacadão'), compra('b', '2026-09-02', -16.7, -49.3, null)]
+
+  it('devolve o nome do mercado a menos de 150 m', () => {
+    expect(mercadoConhecidoPerto(compras, { lat: -16.6008, lng: -49.2 })).toBe('Atacadão')
+  })
+
+  it('não devolve nada longe de qualquer mercado ou onde a compra não tem nome', () => {
+    expect(mercadoConhecidoPerto(compras, { lat: -16.62, lng: -49.2 })).toBeNull()
+    expect(mercadoConhecidoPerto(compras, { lat: -16.7, lng: -49.3 })).toBeNull()
   })
 })

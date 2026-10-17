@@ -13,6 +13,7 @@ import { Segmented } from '@/components/ui/segmented'
 import { useUsuario } from '@/hooks/sessao'
 import { useItens, usePrecosAnteriores } from '@/hooks/useItens'
 import { useLista, usePerfil } from '@/hooks/useListas'
+import { useMercadoPeloLocal } from '@/hooks/useMercadoPeloLocal'
 import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
 import { preverFaltantes } from '@/lib/previsao'
@@ -31,6 +32,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const { data: perfil } = usePerfil()
   const aoVivo = useRealtime(id, { id: usuario.id, nome: perfil?.nome ?? '' })
   const precos = usePrecosAnteriores(id)
+  useMercadoPeloLocal(lista ?? undefined)
 
   const resumo = resumir(itens)
   const faltando = resumo.itens_total - resumo.itens_comprados
