@@ -17,7 +17,6 @@ import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
 import { preverFaltantes } from '@/lib/previsao'
 import { navegar, voltar } from '@/lib/rota'
-import { plural } from '@/lib/utils'
 
 type ListaPaginaProps = { id: string; aba: 'chat' | 'itens' }
 
@@ -67,12 +66,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const finalizada = lista.status === 'finalizada'
   // Carrinho mais o que falta, pelo preço da última compra de cada item.
   const previsao = preverFaltantes(itens, precos)
-  const subtitulo = [
-    `${resumo.itens_comprados} de ${plural(resumo.itens_total, 'item', 'itens')}`,
-    lista.mercado,
-  ]
-    .filter(Boolean)
-    .join(' • ')
+  const subtitulo = lista.mercado
 
   return (
     <Moldura
@@ -93,7 +87,10 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
           </Button>
           <div className="min-w-0 flex-1 text-center">
             <h1 className="truncate text-[1.125rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
-            <p className="dinheiro truncate text-[0.875rem] text-muted-foreground">{subtitulo}</p>
+            <div className="flex items-center justify-center gap-1.5">
+              {finalizada ? null : <StatusConexao canal={aoVivo.canal} compacto className="h-5" />}
+              {subtitulo ? <p className="truncate text-[0.875rem] text-muted-foreground">{subtitulo}</p> : null}
+            </div>
           </div>
           <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => { setAbrirResumo(false); setOpcoesAbertas(true) }}>
             <Ellipsis className="size-6" />
@@ -101,7 +98,6 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         </div>
 
         <div className="mt-3 flex items-center gap-2 px-1">
-          {finalizada ? null : <StatusConexao canal={aoVivo.canal} />}
           <Segmented
             label="Visão da lista"
             className="flex-1"

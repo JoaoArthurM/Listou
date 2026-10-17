@@ -10,6 +10,8 @@ import { cn, plural } from '@/lib/utils'
 type StatusConexaoProps = {
   /** Estado do canal em tempo real da lista aberta, quando há um. */
   canal?: 'conectando' | 'conectado' | 'erro'
+  /** Online sem problema vira só as barras de sinal; os outros estados mantêm o texto. */
+  compacto?: boolean
   className?: string
 }
 
@@ -38,7 +40,7 @@ function Barras({ cheias, batidas, buscando }: { cheias: number; batidas: number
 }
 
 /** Indicador de conexão: mostra o que a sonda mediu, não o que o navegador supõe. */
-export function StatusConexao({ canal, className }: StatusConexaoProps) {
+export function StatusConexao({ canal, compacto, className }: StatusConexaoProps) {
   const { estado, pendentes, fotosNaFila, latenciaMs, batidas } = useConexao()
   const falhas = useFalhas()
   const fotosComErro = useFilaDeFotos().filter((f) => f.estado === 'erro').length
@@ -129,10 +131,10 @@ export function StatusConexao({ canal, className }: StatusConexaoProps) {
     <span
       role="status"
       title={latenciaMs === null ? undefined : `Servidor respondeu em ${latenciaMs} ms`}
-      className={cn(base, lento ? 'text-foreground' : 'text-muted-foreground', className)}
+      className={cn(base, compacto && rotulo === 'Online' && 'px-0', lento ? 'text-foreground' : 'text-muted-foreground', className)}
     >
       <Barras cheias={cheias} batidas={batidas} buscando={buscando} />
-      {rotulo}
+      {compacto && rotulo === 'Online' ? <span className="sr-only">{rotulo}</span> : rotulo}
     </span>
   )
 }
