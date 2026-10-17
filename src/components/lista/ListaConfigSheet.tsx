@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { QrCodigo } from '@/components/lista/QrCodigo'
-import { SugestaoMercado } from '@/components/lista/SugestaoMercado'
 import { useUsuario } from '@/hooks/sessao'
 import {
   useAtualizarLista,
@@ -18,6 +17,7 @@ import {
 } from '@/hooks/useListas'
 import { avisar } from '@/lib/avisos'
 import { formatarReais, formatarValor, parseDinheiro } from '@/lib/dinheiro'
+import { posicaoAtual } from '@/lib/mercados'
 import { nomeCartao } from '@/lib/precos'
 import { linkDoConvite } from '@/lib/qr'
 import { resumirCompra } from '@/lib/resumo'
@@ -47,9 +47,6 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
 
   const [nome, setNome] = useState(lista.nome)
   const [mercado, setMercado] = useState(lista.mercado ?? '')
-  const [ponto, setPonto] = useState<{ lat: number; lng: number } | null>(
-    lista.mercado_lat !== null && lista.mercado_lng !== null ? { lat: lista.mercado_lat, lng: lista.mercado_lng } : null,
-  )
   const [orcamento, setOrcamento] = useState(lista.orcamento_centavos === null ? '' : formatarValor(lista.orcamento_centavos))
   const [erro, setErro] = useState<string | null>(null)
   const [codigo, setCodigo] = useState<string | null>(null)
@@ -60,6 +57,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
   // O que o caixa cobrou, digitado no resumo (opcional).
   const [pago, setPago] = useState('')
   const [erroPago, setErroPago] = useState<string | null>(null)
+  const [localizando, setLocalizando] = useState(false)
 
   const souDono = membros.some((m) => m.perfil_id === usuario.id && m.papel === 'dono') || lista.criado_por === usuario.id
   const outros = membros.filter((m) => m.perfil_id !== usuario.id).map((m) => m.nome)
@@ -77,7 +75,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
     if (orcamento.trim() !== '' && valor === null) return setErro('Confira o orçamento: use o formato 250,00.')
     setErro(null)
     atualizar.mutate(
-      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor, mercado_lat: ponto?.lat ?? null, mercado_lng: ponto?.lng ?? null },
+      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor },
       { onSuccess: () => avisar('Lista atualizada.', 'sucesso'), onError: (e) => setErro(mensagem(e)) },
     )
   }
@@ -113,14 +111,26 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
     }
   }
 
-  function mudarStatus() {
+  async function mudarStatus() {
     let totalPago: number | null | undefined
     if (!finalizada && pago.trim() !== '') {
       totalPago = parseDinheiro(pago)
       if (totalPago === null) return setErroPago('Confira o valor: use o formato 250,00.')
     }
+    // Quem finaliza costuma estar no mercado: o local da compra é onde a pessoa
+    // está agora. Sem permissão ou sinal, finaliza sem local (o mapa deixa marcar depois).
+    let local: { lat: number; lng: number } | null = null
+    if (!finalizada) {
+      setLocalizando(true)
+      local = await posicaoAtual()
+      setLocalizando(false)
+    }
     atualizar.mutate(
-      { status: finalizada ? 'ativa' : 'finalizada', ...(totalPago === undefined ? {} : { total_pago_centavos: totalPago }) },
+      {
+        status: finalizada ? 'ativa' : 'finalizada',
+        ...(totalPago === undefined ? {} : { total_pago_centavos: totalPago }),
+        ...(local ? { mercado_lat: local.lat, mercado_lng: local.lng } : {}),
+      },
       {
         onSuccess: () => {
           aoFechar()
@@ -216,8 +226,8 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
           ) : null}
 
           <div className="space-y-3 pb-1">
-            <Button className="w-full" disabled={atualizar.isPending} onClick={mudarStatus}>
-              Finalizar compra
+            <Button className="w-full" disabled={atualizar.isPending || localizando} onClick={() => void mudarStatus()}>
+              {localizando ? 'Marcando o local…' : 'Finalizar compra'}
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => (iniciarNoResumo ? aoFechar() : setResumindo(false))}>
               Voltar
@@ -272,28 +282,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
         <Secao id="titulo-dados" icone={ClipboardList} titulo="Dados da lista">
           <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
             <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
-            <Field
-              disabled={finalizada}
-              label="Mercado"
-              hint="Opcional"
-              value={mercado}
-              onChange={(e) => {
-                setMercado(e.target.value)
-                setPonto(null)
-              }}
-              maxLength={60}
-              placeholder="Atacadão"
-              autoComplete="off"
-            />
-            {finalizada ? null : (
-              <SugestaoMercado
-                escolhido={ponto ? mercado : null}
-                aoEscolher={(m) => {
-                  setMercado(m.nome)
-                  setPonto({ lat: m.lat, lng: m.lng })
-                }}
-              />
-            )}
+            <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Atacadão" autoComplete="off" />
             <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
             {erro ? (
               <p role="alert" className="text-sm text-destructive">
@@ -333,7 +322,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
           titulo={finalizada ? 'Compra finalizada' : 'Fechar a compra'}
           descricao={finalizada ? 'Reabrir devolve a lista ao chat e ao checklist.' : 'Mostra o resumo e guarda o recibo no Histórico.'}
         >
-          <Button className="w-full" disabled={atualizar.isPending} onClick={finalizada ? mudarStatus : () => setResumindo(true)}>
+          <Button className="w-full" disabled={atualizar.isPending} onClick={finalizada ? () => void mudarStatus() : () => setResumindo(true)}>
             {finalizada ? 'Reabrir lista' : 'Finalizar compra'}
           </Button>
         </Secao>

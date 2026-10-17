@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { agruparPorMercado, type CompraNoMapa } from './mapa'
-import { distanciaEmMetros, mercadosDaResposta } from './mercados'
+import { distanciaEmMetros } from './mercados'
 
 const compra = (id: string, quando: string, lat: number, lng: number, mercado: string | null = 'Atacadão'): CompraNoMapa => ({
   id,
@@ -38,31 +38,10 @@ describe('agruparPorMercado', () => {
   })
 })
 
-describe('mercados', () => {
+describe('distanciaEmMetros', () => {
   it('mede distância em metros', () => {
     const d = distanciaEmMetros({ lat: -16.6, lng: -49.2 }, { lat: -16.601, lng: -49.2 })
     expect(d).toBeGreaterThan(105)
     expect(d).toBeLessThan(117)
-  })
-
-  it('ordena por distância, tira sem nome e repetidos', () => {
-    const origem = { lat: -16.6, lng: -49.2 }
-    const r = mercadosDaResposta(
-      {
-        elements: [
-          { lat: -16.603, lon: -49.2, tags: { name: 'Longe' } },
-          { center: { lat: -16.6005, lon: -49.2 }, tags: { name: 'Perto' } },
-          { lat: -16.6001, lon: -49.2, tags: {} },
-          { lat: -16.602, lon: -49.2, tags: { name: 'perto' } },
-        ],
-      },
-      origem,
-    )
-    expect(r.map((m) => m.nome)).toEqual(['Perto', 'Longe'])
-  })
-
-  it('resposta estranha vira lista vazia', () => {
-    expect(mercadosDaResposta(null, { lat: 0, lng: 0 })).toEqual([])
-    expect(mercadosDaResposta({ elements: 'x' }, { lat: 0, lng: 0 })).toEqual([])
   })
 })

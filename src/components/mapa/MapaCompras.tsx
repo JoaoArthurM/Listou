@@ -116,6 +116,44 @@ export default function MapaCompras({ mercados, selecionado, aoSelecionar, edita
     instancia.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     mapa.current = instancia
 
+    // Bolinha azul de onde a pessoa está, sem mexer na câmera; o botão de baixo do zoom leva até ela.
+    let voce: maplibregl.Marker | null = null
+    let ultima: Ponto | null = null
+    const aoAcharVoce = (p: GeolocationPosition) => {
+      ultima = { lat: p.coords.latitude, lng: p.coords.longitude }
+      if (voce) voce.setLngLat([ultima.lng, ultima.lat])
+      else {
+        const bolinha = document.createElement('div')
+        bolinha.className = 'pino-voce'
+        bolinha.setAttribute('role', 'img')
+        bolinha.setAttribute('aria-label', 'Você está aqui')
+        voce = new maplibregl.Marker({ element: bolinha }).setLngLat([ultima.lng, ultima.lat]).addTo(instancia)
+      }
+    }
+    const vigia = 'geolocation' in navigator
+      ? navigator.geolocation.watchPosition(aoAcharVoce, () => {}, { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 })
+      : null
+    instancia.addControl(
+      {
+        onAdd() {
+          const grupo = document.createElement('div')
+          grupo.className = 'maplibregl-ctrl maplibregl-ctrl-group'
+          const botao = document.createElement('button')
+          botao.type = 'button'
+          botao.title = 'Ir para onde estou'
+          botao.setAttribute('aria-label', 'Ir para onde estou')
+          botao.className = 'botao-voce'
+          botao.addEventListener('click', () => {
+            if (ultima) instancia.flyTo({ center: [ultima.lng, ultima.lat], zoom: Math.max(instancia.getZoom(), 15), duration: 800, essential: true })
+          })
+          grupo.append(botao)
+          return grupo
+        },
+        onRemove() {},
+      },
+      'top-right',
+    )
+
     const atualizarTema = () => recipiente.current?.classList.toggle('mapa-escuro', escuro())
     atualizarTema()
     const observador = new MutationObserver(atualizarTema)
@@ -129,6 +167,7 @@ export default function MapaCompras({ mercados, selecionado, aoSelecionar, edita
 
     const marcadoresVivos = marcadores.current
     return () => {
+      if (vigia !== null) navigator.geolocation.clearWatch(vigia)
       observador.disconnect()
       marcadoresVivos.clear()
       pino.current = null

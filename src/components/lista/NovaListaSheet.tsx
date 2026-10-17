@@ -1,7 +1,6 @@
 import { ScanLine } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { LeitorQr } from '@/components/lista/LeitorQr'
-import { SugestaoMercado } from '@/components/lista/SugestaoMercado'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
@@ -15,8 +14,6 @@ export function NovaListaSheet({ aoFechar }: { aoFechar: () => void }) {
   const criar = useCriarLista()
   const [nome, setNome] = useState('')
   const [mercado, setMercado] = useState('')
-  // Ponto do mercado sugerido pela localização; escrever o nome à mão o descarta.
-  const [ponto, setPonto] = useState<{ lat: number; lng: number } | null>(null)
   const [orcamento, setOrcamento] = useState('')
   const [erro, setErro] = useState<string | null>(null)
 
@@ -28,7 +25,7 @@ export function NovaListaSheet({ aoFechar }: { aoFechar: () => void }) {
     if (orcamento.trim() !== '' && valor === null) return setErro('Confira o orçamento: use o formato 250,00.')
     setErro(null)
     criar.mutate(
-      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor, mercado_lat: ponto?.lat ?? null, mercado_lng: ponto?.lng ?? null },
+      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor },
       {
         onSuccess: (lista) => {
           aoFechar()
@@ -43,27 +40,7 @@ export function NovaListaSheet({ aoFechar }: { aoFechar: () => void }) {
     <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title="Nova lista" description="Depois de criar, convide quem compra com você.">
       <form onSubmit={enviar} className="space-y-4" noValidate>
         <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Compra do mês" maxLength={60} autoComplete="off" data-autofocus />
-        <Field
-          label="Mercado"
-          hint="Opcional"
-          value={mercado}
-          onChange={(e) => {
-            setMercado(e.target.value)
-            setPonto(null)
-          }}
-          placeholder="Atacadão"
-          maxLength={60}
-          autoComplete="off"
-        />
-        <SugestaoMercado
-          automatico
-          aplicarMaisPerto
-          escolhido={ponto ? mercado : null}
-          aoEscolher={(m) => {
-            setMercado(m.nome)
-            setPonto({ lat: m.lat, lng: m.lng })
-          }}
-        />
+        <Field label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} placeholder="Atacadão" maxLength={60} autoComplete="off" />
         <Field label="Orçamento (R$)" hint="Opcional" value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
         {erro ? (
           <p role="alert" className="text-sm text-destructive">

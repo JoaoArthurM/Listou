@@ -535,3 +535,31 @@
   width: 2.75rem;
   height: 2.75rem;
 }
+
+/* Bolinha azul de "você está aqui" e o botão que leva até ela. */
+.pino-voce {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 3px solid #fff;
+  border-radius: 9999px;
+  background: #2f7cf6;
+  box-shadow: 0 0 0 0 rgb(47 124 246 / 0.5), 0 1px 4px rgb(0 0 0 / 0.35);
+  animation: pulsar-voce 2s ease-out infinite;
+}
+
+@keyframes pulsar-voce {
+  to {
+    box-shadow: 0 0 0 16px rgb(47 124 246 / 0), 0 1px 4px rgb(0 0 0 / 0.35);
+  }
+}
+
+.botao-voce::before {
+  content: '';
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: auto;
+  border: 2px solid #2f7cf6;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #2f7cf6 0 35%, transparent 38%);
+}
