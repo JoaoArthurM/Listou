@@ -130,6 +130,19 @@ export function Recibo({ lista, itens, carregando }: ReciboProps) {
               </div>
             </div>
 
+            {lista.total_pago_centavos !== null ? (
+              <dl className="mt-3 space-y-1">
+                <Linha rotulo="Cobrado no caixa" valor={formatarReais(lista.total_pago_centavos)} forte />
+                {lista.total_pago_centavos !== resumo.total_centavos ? (
+                  <Linha
+                    rotulo={lista.total_pago_centavos > resumo.total_centavos ? 'Caixa cobrou a mais' : 'Caixa cobrou a menos'}
+                    valor={formatarReais(Math.abs(lista.total_pago_centavos - resumo.total_centavos))}
+                    discreto
+                  />
+                ) : null}
+              </dl>
+            ) : null}
+
             {saldo !== null ? (
               <dl className="mt-3 space-y-1 text-muted-foreground">
                 <Linha rotulo="Orçamento" valor={formatarReais(lista.orcamento_centavos ?? 0)} />
@@ -149,8 +162,8 @@ export function Recibo({ lista, itens, carregando }: ReciboProps) {
                 </p>
                 <ul className="mt-1.5 space-y-0.5 text-muted-foreground">
                   {naoComprados.map((item) => (
-                    <li key={item.id} className="break-words line-through decoration-controle">
-                      {normalizarNome(item.nome)}
+                    <li key={item.id} className="break-words">
+                      <span className="risco-caneta">{normalizarNome(item.nome)}</span>
                     </li>
                   ))}
                 </ul>

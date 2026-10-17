@@ -24,7 +24,7 @@ import { navegar } from '@/lib/rota'
 import { listarNomes, plural } from '@/lib/utils'
 import type { Item, Lista } from '@/types/app'
 
-type ListaConfigSheetProps = { lista: Lista; itens: Item[]; aoFechar: () => void }
+type ListaConfigSheetProps = { lista: Lista; itens: Item[]; aoFechar: () => void; iniciarNoResumo?: boolean }
 
 // "Leite, Café, Pão e mais 3": nomes demais não cabem numa frase.
 function algunsNomes(nomes: string[]): string {
@@ -35,7 +35,7 @@ function algunsNomes(nomes: string[]): string {
 const mensagem = (erro: unknown) => (erro instanceof Error ? erro.message : 'Algo deu errado. Tente de novo.')
 
 /** Opções da lista: convidar, editar dados, cartões da loja, finalizar e sair. */
-export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetProps) {
+export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = false }: ListaConfigSheetProps) {
   const usuario = useUsuario()
   const { data: membros = [] } = useMembros(lista.id)
   const atualizar = useAtualizarLista(lista.id)
@@ -52,7 +52,10 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
   const [copiado, setCopiado] = useState(false)
   const [confirmarSaida, setConfirmarSaida] = useState(false)
   // Antes de fechar a compra, a pessoa vê o resumo dela.
-  const [resumindo, setResumindo] = useState(false)
+  const [resumindo, setResumindo] = useState(iniciarNoResumo)
+  // O que o caixa cobrou, digitado no resumo (opcional).
+  const [pago, setPago] = useState('')
+  const [erroPago, setErroPago] = useState<string | null>(null)
 
   const souDono = membros.some((m) => m.perfil_id === usuario.id && m.papel === 'dono') || lista.criado_por === usuario.id
   const outros = membros.filter((m) => m.perfil_id !== usuario.id).map((m) => m.nome)
@@ -107,8 +110,13 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
   }
 
   function mudarStatus() {
+    let totalPago: number | null | undefined
+    if (!finalizada && pago.trim() !== '') {
+      totalPago = parseDinheiro(pago)
+      if (totalPago === null) return setErroPago('Confira o valor: use o formato 250,00.')
+    }
     atualizar.mutate(
-      { status: finalizada ? 'ativa' : 'finalizada' },
+      { status: finalizada ? 'ativa' : 'finalizada', ...(totalPago === undefined ? {} : { total_pago_centavos: totalPago }) },
       {
         onSuccess: () => {
           aoFechar()
@@ -184,11 +192,30 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
             </p>
           ) : null}
 
+          <Field
+            label="Quanto deu no caixa? (R$)"
+            hint="Opcional. O recibo mostra a diferença para o total do app."
+            value={pago}
+            onChange={(e) => {
+              setPago(e.target.value)
+              setErroPago(null)
+            }}
+            inputMode="decimal"
+            placeholder={formatarValor(resumo.total_centavos)}
+            autoComplete="off"
+            className="dinheiro"
+          />
+          {erroPago ? (
+            <p role="alert" className="-mt-3 text-sm text-destructive">
+              {erroPago}
+            </p>
+          ) : null}
+
           <div className="space-y-3 pb-1">
             <Button className="w-full" disabled={atualizar.isPending} onClick={mudarStatus}>
               Finalizar compra
             </Button>
-            <Button variant="ghost" className="w-full" onClick={() => setResumindo(false)}>
+            <Button variant="ghost" className="w-full" onClick={() => (iniciarNoResumo ? aoFechar() : setResumindo(false))}>
               Voltar
             </Button>
           </div>
@@ -241,7 +268,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar }: ListaConfigSheetPro
         <Secao id="titulo-dados" icone={ClipboardList} titulo="Dados da lista">
           <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
             <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
-            <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Max Atacadista" autoComplete="off" />
+            <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Atacadão" autoComplete="off" />
             <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
             {erro ? (
               <p role="alert" className="text-sm text-destructive">

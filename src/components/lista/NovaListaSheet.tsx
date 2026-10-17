@@ -40,7 +40,7 @@ export function NovaListaSheet({ aoFechar }: { aoFechar: () => void }) {
     <Sheet open onOpenChange={(aberta) => !aberta && aoFechar()} title="Nova lista" description="Depois de criar, convide quem compra com você.">
       <form onSubmit={enviar} className="space-y-4" noValidate>
         <Field label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Compra do mês" maxLength={60} autoComplete="off" data-autofocus />
-        <Field label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} placeholder="Max Atacadista" maxLength={60} autoComplete="off" />
+        <Field label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} placeholder="Atacadão" maxLength={60} autoComplete="off" />
         <Field label="Orçamento (R$)" hint="Opcional" value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
         {erro ? (
           <p role="alert" className="text-sm text-destructive">

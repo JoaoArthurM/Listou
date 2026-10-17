@@ -38,6 +38,14 @@ export function acompanharTeclado() {
 
   vv.addEventListener('resize', atualizar)
   vv.addEventListener('scroll', atualizar)
+  // No Android o innerHeight e o visualViewport nem sempre mudam no mesmo
+  // instante ao fechar o teclado; sem reler depois, "--teclado" ficava preso
+  // e a folha parava no ar, cortada.
+  window.addEventListener('resize', atualizar)
+  document.addEventListener('focusout', () => {
+    requestAnimationFrame(atualizar)
+    setTimeout(atualizar, 350)
+  })
   window.addEventListener('orientationchange', () => {
     alturaCheia = 0
     atualizar()

@@ -363,7 +363,7 @@ O que veio da referência:
 - **Colmeia** de hexágonos deitados ao fundo, propositalmente quase invisível (`components/layout/Colmeia.tsx`; a força é o token `--colmeia-forca`).
 
 Onde o app se afasta dela, de propósito:
-- **Texto escuro sobre o laranja.** Branco sobre `#FB6133` dá 3,06:1 e não passa no AA; com texto escuro dá 6,8:1.
+- **Texto branco sobre o laranja (decisão do usuário, out/2026).** Dá 3,06:1: passa no AA só para texto grande ou em negrito, e não para texto pequeno corrido. O app antes usava texto escuro (6,8:1); voltar é trocar `--primary-foreground` em `src/index.css`.
 - **Cinzas mais escuros** em texto secundário e na borda dos círculos, pelo mesmo motivo.
 - **Sem brilhos:** nada de halo colorido atrás de cartões nem sombra laranja em botões.
 

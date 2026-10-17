@@ -305,18 +305,18 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
                 <p className="max-w-[85%] text-right text-sm text-muted-foreground">Sem sinal agora. Leio esta etiqueta sozinho quando a conexão voltar.</p>
               ) : null}
               {foto.estado === 'erro' ? (
-                <div role="alert" className="flex max-w-[85%] flex-col items-end text-right text-sm text-destructive">
+                <div role="alert" className="flex w-full flex-col items-end gap-2.5 text-right text-sm text-destructive">
                   <span>{foto.erro}</span>
-                  <span className="-mr-3 flex">
+                  <span className="flex w-full gap-2">
+                    <Button variant="secondary" className="flex-1 px-3 text-foreground" onClick={() => void descartarFoto(foto.id)}>
+                      Descartar
+                    </Button>
                     {foto.podeTentar ? (
-                      <Button variant="ghost" size="sm" className="px-3 text-foreground" onClick={() => void tentarFotoDeNovo(foto.id)}>
-                        <RotateCcw className="size-4" />
+                      <Button variant="dark" className="flex-1 px-3" onClick={() => void tentarFotoDeNovo(foto.id)}>
+                        <RotateCcw aria-hidden className="size-4" />
                         Tentar de novo
                       </Button>
                     ) : null}
-                    <Button variant="ghost" size="sm" className="px-3 text-foreground" onClick={() => void descartarFoto(foto.id)}>
-                      Descartar
-                    </Button>
                   </span>
                 </div>
               ) : null}

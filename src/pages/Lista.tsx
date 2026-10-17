@@ -26,6 +26,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const { data: lista, isPending } = useLista(id)
   const { data: itens = [], isPending: carregandoItens } = useItens(id)
   const [opcoesAbertas, setOpcoesAbertas] = useState(false)
+  // Aberta pelo botão do rodapé, a folha já vem no resumo da compra.
+  const [abrirResumo, setAbrirResumo] = useState(false)
   const usuario = useUsuario()
   const { data: perfil } = usePerfil()
   const aoVivo = useRealtime(id, { id: usuario.id, nome: perfil?.nome ?? '' })
@@ -78,6 +80,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         <TotalBar
           resumo={resumo}
           orcamentoCentavos={lista.orcamento_centavos}
+          aoFinalizar={finalizada ? undefined : () => { setAbrirResumo(true); setOpcoesAbertas(true) }}
           semPreco={itens.filter((i) => i.comprado && i.total_centavos === null).length}
           previstoCentavos={!finalizada && previsao.comPreco > 0 ? resumo.total_centavos + previsao.centavos : null}
         />
@@ -92,12 +95,13 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
             <h1 className="truncate text-[1.125rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
             <p className="dinheiro truncate text-[0.875rem] text-muted-foreground">{subtitulo}</p>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => setOpcoesAbertas(true)}>
+          <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => { setAbrirResumo(false); setOpcoesAbertas(true) }}>
             <Ellipsis className="size-6" />
           </Button>
         </div>
 
         <div className="mt-3 flex items-center gap-2 px-1">
+          {finalizada ? null : <StatusConexao canal={aoVivo.canal} />}
           <Segmented
             label="Visão da lista"
             className="flex-1"
@@ -106,11 +110,10 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
             options={
               finalizada
                 ? [
-                    { value: 'itens', label: 'Recibo' },
                     { value: 'chat', label: 'Histórico' },
+                    { value: 'itens', label: 'Recibo' },
                   ]
                 : [
-                    { value: 'chat', label: 'Chat' },
                     {
                       value: 'itens',
                       label: (
@@ -125,10 +128,10 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
                         </>
                       ),
                     },
+                    { value: 'chat', label: 'Chat' },
                   ]
             }
           />
-          <StatusConexao canal={aoVivo.canal} />
         </div>
       </header>
 
@@ -146,7 +149,7 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         )}
       </div>
 
-      {opcoesAbertas ? <ListaConfigSheet lista={lista} itens={itens} aoFechar={() => setOpcoesAbertas(false)} /> : null}
+      {opcoesAbertas ? <ListaConfigSheet lista={lista} itens={itens} iniciarNoResumo={abrirResumo} aoFechar={() => setOpcoesAbertas(false)} /> : null}
     </Moldura>
   )
 }

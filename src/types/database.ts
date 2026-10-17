@@ -186,6 +186,7 @@ export type Database = {
           nome: string
           orcamento_centavos: number | null
           status: string
+          total_pago_centavos: number | null
         }
         Insert: {
           cartoes?: string[]
@@ -198,6 +199,7 @@ export type Database = {
           nome: string
           orcamento_centavos?: number | null
           status?: string
+          total_pago_centavos?: number | null
         }
         Update: {
           cartoes?: string[]
@@ -210,6 +212,7 @@ export type Database = {
           nome?: string
           orcamento_centavos?: number | null
           status?: string
+          total_pago_centavos?: number | null
         }
         Relationships: [
           {

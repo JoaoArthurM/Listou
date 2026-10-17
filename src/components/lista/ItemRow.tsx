@@ -149,10 +149,10 @@ export function ItemRow({ item, somenteLeitura = false, quemAdicionou, ultimoPre
             <span
               className={cn(
                 'block truncate text-[1rem] leading-snug transition-colors duration-200',
-                item.comprado && 'text-muted-foreground line-through decoration-controle decoration-1',
+                item.comprado && 'text-muted-foreground',
               )}
             >
-              {normalizarNome(item.nome)}
+              {item.comprado ? <span className="risco-caneta">{normalizarNome(item.nome)}</span> : normalizarNome(item.nome)}
             </span>
             {detalhe ? <span className="dinheiro mt-0.5 block truncate text-[0.8125rem] text-muted-foreground">{detalhe}</span> : null}
           </span>

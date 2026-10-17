@@ -3,8 +3,9 @@ import { useSyncExternalStore } from 'react'
 export type Tema = 'claro' | 'escuro' | 'sistema'
 
 const CHAVE = 'listou:tema'
-// Mesmos valores de --background em src/index.css; pintam a barra de status.
-const COR_BARRA = { claro: '#FCF9EF', escuro: '#161513' }
+// Preto da moldura (--moldura) nos dois temas: o Android pinta a barra de gestos
+// e a de status com essa cor, e a de baixo precisa ficar escura também no claro.
+const COR_BARRA = { claro: '#000000', escuro: '#000000' }
 
 const sistemaEscuro = window.matchMedia('(prefers-color-scheme: dark)')
 const ouvintes = new Set<() => void>()

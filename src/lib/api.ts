@@ -191,7 +191,7 @@ export async function criarLista(nova: NovaLista): Promise<Lista> {
   return paraLista(data)
 }
 
-export type ListaPatch = Partial<Pick<Lista, 'nome' | 'mercado' | 'orcamento_centavos' | 'status'>>
+export type ListaPatch = Partial<Pick<Lista, 'nome' | 'mercado' | 'orcamento_centavos' | 'status' | 'total_pago_centavos'>>
 
 export async function atualizarLista(id: string, patch: ListaPatch): Promise<Lista> {
   const { data, error } = await supabase.from('listas').update(patch).eq('id', id).select().single()

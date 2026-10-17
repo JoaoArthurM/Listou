@@ -1,3 +1,5 @@
+import { Flag } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { formatarReais } from '@/lib/dinheiro'
 import { cn, plural } from '@/lib/utils'
 import type { Resumo } from '@/types/app'
@@ -8,6 +10,8 @@ type TotalBarProps = {
   semPreco?: number
   /** Carrinho mais o que falta, pelo preço da última compra. Null quando não há preço anterior de nada que falta. */
   previstoCentavos?: number | null
+  /** Abre o resumo para fechar a compra. Sem ele, o botão não aparece (lista finalizada). */
+  aoFinalizar?: () => void
 }
 
 /**
@@ -15,14 +19,14 @@ type TotalBarProps = {
  * vêm dos itens em cache, somados em código (nunca pela IA), e mudam nos dois
  * aparelhos via Realtime.
  */
-export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCentavos = null }: TotalBarProps) {
+export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCentavos = null, aoFinalizar }: TotalBarProps) {
   const { total_centavos, itens_comprados, itens_total } = resumo
   const saldo = orcamentoCentavos === null ? null : orcamentoCentavos - total_centavos
   const percentual = itens_total > 0 ? Math.round((itens_comprados / itens_total) * 100) : 0
 
   return (
     <section aria-label="Total do carrinho" className="text-moldura-foreground">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="dinheiro text-[0.8125rem] text-moldura-muted">
             Carrinho{previstoCentavos === null ? null : ` · previsão ${formatarReais(previstoCentavos)}`}
@@ -31,21 +35,12 @@ export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCent
             {formatarReais(total_centavos)}
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="dinheiro text-[0.875rem]">
-            {itens_comprados} de {plural(itens_total, 'item', 'itens')}
-          </p>
-          {saldo !== null || semPreco > 0 ? (
-            <p className={cn('dinheiro mt-0.5 text-[0.8125rem]', saldo !== null && saldo < 0 ? 'text-destaque' : 'text-moldura-muted')}>
-              {[
-                saldo === null ? null : saldo < 0 ? `passou ${formatarReais(-saldo)}` : `restam ${formatarReais(saldo)}`,
-                semPreco > 0 ? `${semPreco} sem preço` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          ) : null}
-        </div>
+        {aoFinalizar && itens_comprados > 0 ? (
+          <Button size="sm" className="shrink-0" onClick={aoFinalizar}>
+            <Flag aria-hidden className="size-4" />
+            Finalizar compra
+          </Button>
+        ) : null}
       </div>
       <div
         role="progressbar"
@@ -59,6 +54,21 @@ export function TotalBar({ resumo, orcamentoCentavos, semPreco = 0, previstoCent
           className="h-full rounded-full bg-primary transition-[width] duration-500 ease-saida"
           style={{ width: `${percentual}%` }}
         />
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-4">
+        <p className="dinheiro text-[0.875rem]">
+          {itens_comprados} de {plural(itens_total, 'item', 'itens')}
+        </p>
+        {saldo !== null || semPreco > 0 ? (
+          <p className={cn('dinheiro text-[0.8125rem]', saldo !== null && saldo < 0 ? 'text-destaque' : 'text-moldura-muted')}>
+            {[
+              saldo === null ? null : saldo < 0 ? `passou ${formatarReais(-saldo)}` : `restam ${formatarReais(saldo)}`,
+              semPreco > 0 ? `${semPreco} sem preço` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        ) : null}
       </div>
     </section>
   )

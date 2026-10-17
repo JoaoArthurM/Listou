@@ -9,10 +9,12 @@ import {
   Milk,
   Package,
   PawPrint,
+  Search,
   ShoppingCart,
   Snowflake,
   SprayCan,
   Wheat,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -55,6 +57,13 @@ const ICONE_DA_SECAO: Record<Secao, LucideIcon> = {
   pet: PawPrint,
   outros: Package,
 }
+
+/** Minúsculas e sem acento, para a busca achar "Feijão" digitando "feijao". */
+const paraBusca = (texto: string) =>
+  texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLocaleLowerCase('pt-BR')
 
 const dataCurta = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' })
 
@@ -99,13 +108,17 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
   const [editando, setEditando] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [recemAdicionado, setRecemAdicionado] = useState<string | null>(null)
+  const [busca, setBusca] = useState('')
   const rolagem = useRef<HTMLDivElement>(null)
 
-  const faltando = itens.filter((i) => !i.comprado)
-  const noCarrinho = itens.filter((i) => i.comprado)
+  const termo = paraBusca(busca.trim())
+  const visiveis = termo === '' ? itens : itens.filter((i) => paraBusca(i.nome).includes(termo))
+  const faltando = visiveis.filter((i) => !i.comprado)
+  const noCarrinho = visiveis.filter((i) => i.comprado)
+  const faltandoTotal = itens.filter((i) => !i.comprado)
   const itemEmEdicao = itens.find((i) => i.id === editando) ?? null
   const estouro = lista.orcamento_centavos === null ? 0 : resumo.total_centavos - lista.orcamento_centavos
-  const previsao = preverFaltantes(faltando, precos)
+  const previsao = preverFaltantes(faltandoTotal, precos)
 
   // Quem pôs cada item só aparece quando a lista é dividida com alguém.
   const compartilhada = membros.length > 1
@@ -171,12 +184,38 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
 
   let aviso: ReactNode = null
   if (estouro > 0) aviso = <>O carrinho passou {formatarReais(estouro)} do orçamento.</>
-  else if (!somenteLeitura && itens.length > 0 && faltando.length === 0)
+  else if (!somenteLeitura && itens.length > 0 && faltandoTotal.length === 0)
     aviso = <>Tudo no carrinho. Quando passar no caixa, finalize a compra nas opções da lista.</>
 
   return (
     <>
       <div ref={rolagem} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
+        {itens.length > 0 ? (
+          <div className="relative">
+            <Search aria-hidden className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar na lista"
+              aria-label="Buscar item na lista"
+              autoComplete="off"
+              enterKeyHint="search"
+              className="h-11 w-full rounded-full border border-controle/70 bg-card pl-11 pr-11 text-[1rem] placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-search-cancel-button]:hidden"
+            />
+            {busca !== '' ? (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => setBusca('')}
+                className="absolute right-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center text-muted-foreground"
+              >
+                <X aria-hidden className="size-5" />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         {aviso ? <Dica>{aviso}</Dica> : null}
 
         {carregando ? (
@@ -205,6 +244,9 @@ export function ItensView({ lista, itens, resumo, precos, carregando, somenteLei
                   ? ` ${plural(previsao.semPreco, 'item', 'itens')} sem preço anterior ${previsao.semPreco === 1 ? 'ficou' : 'ficaram'} fora da conta.`
                   : null}
               </p>
+            ) : null}
+            {termo !== '' && visiveis.length === 0 ? (
+              <p className="px-2 pt-6 text-[1rem] leading-snug text-muted-foreground">Nenhum item com “{busca.trim()}”.</p>
             ) : null}
             {agruparPorSecao(faltando).map(({ secao, itens: daSecao }) => (
               <Grupo key={secao} titulo={NOME_DA_SECAO[secao]} icone={ICONE_DA_SECAO[secao]} contagem={daSecao.length}>

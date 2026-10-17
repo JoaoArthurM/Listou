@@ -58,13 +58,24 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
     atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'confirmada' } })
   }
 
+  // Confirmada e depois desfeita na lista (item tirado do carrinho, ou de volta
+  // à lista): o chat riscaria de vermelho, como quem corrige a lápis.
+  const desfeita = (acao: AcaoProposta): boolean => {
+    if (dados.estado !== 'confirmada' || itens.length === 0) return false
+    const item = itens.find((i) => i.id === acao.item_id)
+    if (acao.tipo === 'marcar_comprado') return !item || !item.comprado
+    if (acao.tipo === 'desmarcar_comprado') return !!item && item.comprado
+    return !!item
+  }
+  const todasDesfeitas = dados.estado === 'confirmada' && dados.acoes.length > 0 && dados.acoes.every(desfeita)
+
   return (
     <div className="rounded-cartao border border-border bg-card p-4 shadow-cartao">
       {texto ? <p className="mb-2.5 whitespace-pre-line text-[1rem] leading-snug text-muted-foreground">{texto}</p> : null}
       <ul className="space-y-1.5">
         {dados.acoes.map((acao, i) => (
           <li key={i} className="dinheiro whitespace-normal text-[1rem] leading-snug">
-            {descrever(acao)}
+            {desfeita(acao) ? <span className="risco-caneta risco-caneta-vermelho">{descrever(acao)}</span> : descrever(acao)}
           </li>
         ))}
       </ul>
@@ -87,7 +98,7 @@ export function PropostaCard({ mensagemId, dados, listaId, itens, somenteLeitura
         </div>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">
-          {dados.estado === 'confirmada' ? 'Confirmado.' : dados.estado === 'cancelada' ? 'Cancelado.' : 'Não confirmado.'}
+          {todasDesfeitas ? 'Desfeito na lista.' : dados.estado === 'confirmada' ? 'Confirmado.' : dados.estado === 'cancelada' ? 'Cancelado.' : 'Não confirmado.'}
         </p>
       )}
     </div>
