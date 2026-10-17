@@ -1,7 +1,9 @@
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Moldura } from '@/components/layout/Moldura'
 import { NavInferior } from '@/components/layout/NavInferior'
+import { MapaHistorico } from '@/components/mapa/MapaHistorico'
 import { Button } from '@/components/ui/button'
+import { Segmented } from '@/components/ui/segmented'
 import { useUsuario } from '@/hooks/sessao'
 import { useListas } from '@/hooks/useListas'
 import { formatarReais, somarCentavos } from '@/lib/dinheiro'
@@ -52,6 +54,7 @@ function LinhaHistorico({ lista, meuId }: { lista: ListaComResumo; meuId: string
 export function Historico() {
   const usuario = useUsuario()
   const { data: listas, isPending, isError, refetch } = useListas('finalizada')
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista')
   const gasto = somarCentavos((listas ?? []).map((l) => l.resumo.total_centavos))
 
   return (
@@ -63,8 +66,25 @@ export function Historico() {
             ? `${plural(listas.length, 'compra finalizada', 'compras finalizadas')} · ${formatarReais(gasto)}`
             : 'Compras finalizadas'}
         </p>
+        {listas && listas.length > 0 ? (
+          <Segmented
+            label="Como ver o histórico"
+            className="mt-4"
+            value={vista}
+            onChange={setVista}
+            options={[
+              { value: 'lista', label: 'Lista' },
+              { value: 'mapa', label: 'Mapa' },
+            ]}
+          />
+        ) : null}
       </header>
 
+      {vista === 'mapa' && listas && listas.length > 0 ? (
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-4">
+          <MapaHistorico listas={listas} />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-6">
         {isPending ? (
           <div aria-busy className="space-y-3">
@@ -93,6 +113,7 @@ export function Historico() {
           </div>
         )}
       </div>
+      )}
     </Moldura>
   )
 }

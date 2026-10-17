@@ -183,6 +183,8 @@ export type Database = {
           finalizada_em: string | null
           id: string
           mercado: string | null
+          mercado_lat: number | null
+          mercado_lng: number | null
           nome: string
           orcamento_centavos: number | null
           status: string
@@ -196,6 +198,8 @@ export type Database = {
           finalizada_em?: string | null
           id?: string
           mercado?: string | null
+          mercado_lat?: number | null
+          mercado_lng?: number | null
           nome: string
           orcamento_centavos?: number | null
           status?: string
@@ -209,6 +213,8 @@ export type Database = {
           finalizada_em?: string | null
           id?: string
           mercado?: string | null
+          mercado_lat?: number | null
+          mercado_lng?: number | null
           nome?: string
           orcamento_centavos?: number | null
           status?: string

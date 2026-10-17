@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { QrCodigo } from '@/components/lista/QrCodigo'
+import { SugestaoMercado } from '@/components/lista/SugestaoMercado'
 import { useUsuario } from '@/hooks/sessao'
 import {
   useAtualizarLista,
@@ -46,6 +47,9 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
 
   const [nome, setNome] = useState(lista.nome)
   const [mercado, setMercado] = useState(lista.mercado ?? '')
+  const [ponto, setPonto] = useState<{ lat: number; lng: number } | null>(
+    lista.mercado_lat !== null && lista.mercado_lng !== null ? { lat: lista.mercado_lat, lng: lista.mercado_lng } : null,
+  )
   const [orcamento, setOrcamento] = useState(lista.orcamento_centavos === null ? '' : formatarValor(lista.orcamento_centavos))
   const [erro, setErro] = useState<string | null>(null)
   const [codigo, setCodigo] = useState<string | null>(null)
@@ -73,7 +77,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
     if (orcamento.trim() !== '' && valor === null) return setErro('Confira o orçamento: use o formato 250,00.')
     setErro(null)
     atualizar.mutate(
-      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor },
+      { nome: nomeLimpo, mercado: mercado.trim() || null, orcamento_centavos: valor, mercado_lat: ponto?.lat ?? null, mercado_lng: ponto?.lng ?? null },
       { onSuccess: () => avisar('Lista atualizada.', 'sucesso'), onError: (e) => setErro(mensagem(e)) },
     )
   }
@@ -268,7 +272,28 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
         <Secao id="titulo-dados" icone={ClipboardList} titulo="Dados da lista">
           <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
             <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
-            <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Atacadão" autoComplete="off" />
+            <Field
+              disabled={finalizada}
+              label="Mercado"
+              hint="Opcional"
+              value={mercado}
+              onChange={(e) => {
+                setMercado(e.target.value)
+                setPonto(null)
+              }}
+              maxLength={60}
+              placeholder="Atacadão"
+              autoComplete="off"
+            />
+            {finalizada ? null : (
+              <SugestaoMercado
+                escolhido={ponto ? mercado : null}
+                aoEscolher={(m) => {
+                  setMercado(m.nome)
+                  setPonto({ lat: m.lat, lng: m.lng })
+                }}
+              />
+            )}
             <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
             {erro ? (
               <p role="alert" className="text-sm text-destructive">

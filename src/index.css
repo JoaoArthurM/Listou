@@ -421,3 +421,117 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Mapa do histórico: marcadores de mercado (src/components/mapa/MapaCompras.tsx). */
+.pino-mercado {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 12rem;
+  padding: 0.1875rem 0.625rem 0.1875rem 0.1875rem;
+  border: 0;
+  border-radius: 9999px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: 0 2px 10px hsl(var(--sombra) / 0.28);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pino-mercado::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: hsl(var(--card));
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+  z-index: -1;
+}
+
+.pino-mercado-icone {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.pino-mercado-icone svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.pino-mercado-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.pino-mercado-texto b {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pino-mercado-texto i {
+  font-size: 0.8125rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--muted-foreground));
+}
+
+.pino-mercado-ativo {
+  z-index: 2;
+  transform: scale(1.08);
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+
+.pino-mercado-ativo::after {
+  background: hsl(var(--foreground));
+}
+
+.pino-mercado-ativo .pino-mercado-texto i {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.mapa-sem-nomes .pino-mercado {
+  padding: 0.1875rem;
+}
+
+.mapa-sem-nomes .pino-mercado-texto {
+  display: none;
+}
+
+.pino-edicao {
+  cursor: grab;
+  filter: drop-shadow(0 3px 6px hsl(var(--sombra) / 0.4));
+}
+
+.pino-edicao .pino-mercado-icone {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid hsl(var(--card));
+}
+
+/* O fundo do OpenFreeMap é claro; no escuro ele é invertido só no desenho do mapa. */
+.mapa-escuro .maplibregl-canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.88) contrast(0.92);
+}
+
+.maplibregl-ctrl-group button {
+  width: 2.75rem;
+  height: 2.75rem;
+}

@@ -67,6 +67,18 @@ export function useAtualizarLista(id: string) {
   })
 }
 
+/** Corrige no mapa o ponto do mercado de uma compra, inclusive de lista já finalizada. */
+export function useMoverMercado() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, lat, lng }: { id: string; lat: number; lng: number }) => atualizarLista(id, { mercado_lat: lat, mercado_lng: lng }),
+    onSuccess: (lista) => {
+      queryClient.setQueryData(chaves.lista(lista.id), lista)
+      return queryClient.invalidateQueries({ queryKey: chaves.todasAsListas })
+    },
+  })
+}
+
 export function useExcluirLista() {
   const queryClient = useQueryClient()
   return useMutation({

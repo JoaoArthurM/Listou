@@ -183,7 +183,13 @@ export async function buscarMembros(listaId: string): Promise<Membro[]> {
   return (await buscarMembrosDe([listaId])).get(listaId) ?? []
 }
 
-export type NovaLista = { nome: string; mercado: string | null; orcamento_centavos: number | null }
+export type NovaLista = {
+  nome: string
+  mercado: string | null
+  orcamento_centavos: number | null
+  mercado_lat?: number | null
+  mercado_lng?: number | null
+}
 
 export async function criarLista(nova: NovaLista): Promise<Lista> {
   const { data, error } = await supabase.from('listas').insert(nova).select().single()
@@ -191,7 +197,7 @@ export async function criarLista(nova: NovaLista): Promise<Lista> {
   return paraLista(data)
 }
 
-export type ListaPatch = Partial<Pick<Lista, 'nome' | 'mercado' | 'orcamento_centavos' | 'status' | 'total_pago_centavos'>>
+export type ListaPatch = Partial<Pick<Lista, 'nome' | 'mercado' | 'orcamento_centavos' | 'status' | 'total_pago_centavos' | 'mercado_lat' | 'mercado_lng'>>
 
 export async function atualizarLista(id: string, patch: ListaPatch): Promise<Lista> {
   const { data, error } = await supabase.from('listas').update(patch).eq('id', id).select().single()
