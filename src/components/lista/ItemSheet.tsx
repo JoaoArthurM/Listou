@@ -7,6 +7,7 @@ import { Segmented } from '@/components/ui/segmented'
 import { Sheet } from '@/components/ui/sheet'
 import { useAtualizarItem, useRemoverItem } from '@/hooks/useItens'
 import { formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
+import { mascararDinheiro } from '@/lib/mascara'
 import { normalizarNome } from '@/lib/nomes'
 import { escolherFaixa, linhaCalculo, linhaFaixas } from '@/lib/precos'
 import { NOME_DA_SECAO, secaoPeloNome, SECOES, type Secao } from '@/lib/secoes'
@@ -168,8 +169,8 @@ export function ItemSheet({ item, lista, quemAdicionou, ultimoPreco, somenteLeit
                 <Field
                   label={unidade === 'kg' ? 'Preço do kg (R$)' : 'Preço unitário (R$)'}
                   value={precoDigitado ?? (precoAuto === null ? '' : formatarValor(precoAuto))}
-                  onChange={(e) => setPrecoDigitado(e.target.value)}
-                  inputMode="decimal"
+                  onChange={(e) => setPrecoDigitado(mascararDinheiro(e.target.value))}
+                  inputMode="numeric"
                   placeholder="0,00"
                   className="dinheiro"
                 />

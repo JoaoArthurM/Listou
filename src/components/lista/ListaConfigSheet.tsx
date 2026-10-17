@@ -17,6 +17,7 @@ import {
 } from '@/hooks/useListas'
 import { avisar } from '@/lib/avisos'
 import { formatarReais, formatarValor, parseDinheiro } from '@/lib/dinheiro'
+import { mascararDinheiro } from '@/lib/mascara'
 import { posicaoAtual } from '@/lib/mercados'
 import { nomeCartao } from '@/lib/precos'
 import { linkDoConvite } from '@/lib/qr'
@@ -211,10 +212,10 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
             hint="Opcional. O recibo mostra a diferença para o total do app."
             value={pago}
             onChange={(e) => {
-              setPago(e.target.value)
+              setPago(mascararDinheiro(e.target.value))
               setErroPago(null)
             }}
-            inputMode="decimal"
+            inputMode="numeric"
             placeholder={formatarValor(resumo.total_centavos)}
             autoComplete="off"
             className="dinheiro"
@@ -283,7 +284,7 @@ export function ListaConfigSheet({ lista, itens, aoFechar, iniciarNoResumo = fal
           <form onSubmit={salvar} className="space-y-4" noValidate aria-disabled={finalizada}>
             <Field disabled={finalizada} label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} autoComplete="off" />
             <Field disabled={finalizada} label="Mercado" hint="Opcional" value={mercado} onChange={(e) => setMercado(e.target.value)} maxLength={60} placeholder="Atacadão" autoComplete="off" />
-            <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(e.target.value)} inputMode="decimal" placeholder="250,00" className="dinheiro" />
+            <Field disabled={finalizada} label="Orçamento (R$)" hint="Opcional. O rodapé mostra quanto resta ou quanto passou." value={orcamento} onChange={(e) => setOrcamento(mascararDinheiro(e.target.value))} inputMode="numeric" placeholder="0,00" className="dinheiro" />
             {erro ? (
               <p role="alert" className="text-sm text-destructive">
                 {erro}

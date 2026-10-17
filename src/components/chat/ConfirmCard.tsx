@@ -9,6 +9,7 @@ import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
 import { useResponderCartao } from '@/hooks/useListas'
 import { useAtualizarCard } from '@/hooks/useMensagens'
 import { calcularTotalCentavos, formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
+import { mascararDinheiro } from '@/lib/mascara'
 import { problemasDaLeitura, textoDoProblema, travaPreco, type Problema } from '@/lib/leitura'
 import {
   botoesQuantidade,
@@ -318,8 +319,8 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
           <Input
             id={`${idSelecao}-preco`}
             value={precoTexto}
-            onChange={(e) => setPrecoTexto(e.target.value)}
-            inputMode="decimal"
+            onChange={(e) => setPrecoTexto(mascararDinheiro(e.target.value))}
+            inputMode="numeric"
             placeholder="0,00"
             className="dinheiro"
           />
