@@ -112,6 +112,20 @@ export default {
           from: { opacity: '0', transform: 'translate(14px, 8px) scale(0.96)' },
           to: { opacity: '1', transform: 'translate(0, 0) scale(1)' },
         },
+        // Câmera da etiqueta: o quadro fecha em cima do alvo ao abrir e dá um "clique" ao fotografar.
+        mira: {
+          from: { opacity: '0', transform: 'scale(1.16)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        encaixa: {
+          '0%': { transform: 'scale(1)' },
+          '35%': { transform: 'scale(0.955)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        congela: {
+          from: { opacity: '0', transform: 'scale(1.04)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
         cai: {
           '0%': { transform: 'translateY(-9px)', opacity: '0' },
           '20%': { opacity: '1' },
@@ -132,6 +146,9 @@ export default {
         pop: 'pop 300ms cubic-bezier(0.16, 1, 0.3, 1) both',
         entra: 'entra 240ms ease-out both',
         chega: 'chega 340ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        mira: 'mira 520ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        encaixa: 'encaixa 380ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        congela: 'congela 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
         cai: 'cai 1.5s cubic-bezier(0.5, 0, 0.9, 0.5) infinite',
       },
     },

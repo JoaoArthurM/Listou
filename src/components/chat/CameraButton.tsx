@@ -1,7 +1,8 @@
 import { Camera } from 'lucide-react'
-import { useRef, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { fecharTeclado } from '@/lib/teclado'
 import { cn } from '@/lib/utils'
+import { CamaraEtiqueta } from './CamaraEtiqueta'
 
 type CameraButtonProps = { aoFotografar: (arquivo: File) => void; disabled?: boolean; className?: string }
 
@@ -12,6 +13,7 @@ type CameraButtonProps = { aoFotografar: (arquivo: File) => void; disabled?: boo
  */
 export function CameraButton({ aoFotografar, disabled, className }: CameraButtonProps) {
   const entrada = useRef<HTMLInputElement>(null)
+  const [aberta, setAberta] = useState(false)
 
   function aoEscolher(evento: ChangeEvent<HTMLInputElement>) {
     const arquivo = evento.target.files?.[0]
@@ -39,7 +41,9 @@ export function CameraButton({ aoFotografar, disabled, className }: CameraButton
         onClick={() => {
           // Com o teclado aberto a câmera nativa abre espremida e volta com ele aberto.
           fecharTeclado()
-          entrada.current?.click()
+          // Câmera própria (com quadro de leitura) quando o navegador deixa; senão a nativa.
+          if (typeof navigator.mediaDevices?.getUserMedia === 'function') setAberta(true)
+          else entrada.current?.click()
         }}
         className={cn(
           'grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 ease-saida active:scale-95 disabled:opacity-45',
@@ -48,6 +52,7 @@ export function CameraButton({ aoFotografar, disabled, className }: CameraButton
       >
         <Camera aria-hidden className="size-6" strokeWidth={2} />
       </button>
+      {aberta ? <CamaraEtiqueta aoFotografar={aoFotografar} aoFechar={() => setAberta(false)} /> : null}
     </>
   )
 }
