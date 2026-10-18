@@ -8,7 +8,7 @@ import { useUsuario } from '@/hooks/sessao'
 import { useAdicionarItem, useAtualizarItem } from '@/hooks/useItens'
 import { useResponderCartao } from '@/hooks/useListas'
 import { useAtualizarCard } from '@/hooks/useMensagens'
-import { calcularTotalCentavos, formatarQuantidade, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
+import { calcularTotalCentavos, formatarQuantidade, formatarReais, formatarValor, parseDinheiro, parseQuantidade, type Unidade } from '@/lib/dinheiro'
 import { mascararDinheiro } from '@/lib/mascara'
 import { problemasDaLeitura, textoDoProblema, travaPreco, type Problema } from '@/lib/leitura'
 import {
@@ -19,7 +19,9 @@ import {
   linhaCalculo,
   linhaFaixas,
   nomeCartao,
+  rotuloFaixa,
   textoDica,
+  type Faixa,
   type FaixaAplicada,
 } from '@/lib/precos'
 import { normalizarNome } from '@/lib/nomes'
@@ -36,6 +38,14 @@ type ConfirmCardProps = {
 }
 
 const NOVO = 'novo'
+
+/** Rótulo curto do cartão de preço: "Varejo", "6+ un", "Crediffato". */
+function rotuloDaFaixa(faixa: Faixa): string {
+  const minimo = faixa.qtd_minima > 1 ? `${faixa.qtd_minima}+ ` : ''
+  if (faixa.tipo === 'varejo') return 'Varejo'
+  if (faixa.tipo === 'atacado') return minimo ? `${minimo}un` : 'Atacado'
+  return `${faixa.cartao ? nomeCartao(faixa.cartao) : 'Cartão'}${minimo ? ` ${minimo}un` : ''}`
+}
 
 function Resolvido({ resultado }: { resultado: ResultadoCompra }) {
   return (
@@ -176,17 +186,26 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
     })
   }
 
+  const botoes = botoesQuantidade(precoTravado ? [] : faixas, unidade)
+  const celulas = botoes.length + 1 // os botões e o campo "Outro"
+  const colunas = celulas <= 6 ? celulas : Math.ceil(celulas / 2)
+  const ordemTipo = { varejo: 0, atacado: 1, cartao: 2 }
+  const faixasOrdenadas = [...faixas].sort((x, y) => ordemTipo[x.tipo] - ordemTipo[y.tipo] || x.qtd_minima - y.qtd_minima)
+  const total = qtd !== null && preco !== null ? calcularTotalCentavos(preco, qtd) : null
+
+  // Ordem de leitura: nome, valor, quantidade, e só então Adicionar. O que é
+  // exceção (destino, pendências, preço manual) fica menor ou só aparece quando precisa.
   return (
-    <div className="rounded-cartao bg-card p-4 shadow-cartao">
+    <div className="rounded-cartao bg-card p-3.5 shadow-cartao">
       <div className="flex items-start justify-between gap-2">
-        <h3 className={cn('min-w-0 pt-1 text-[1.0625rem] font-medium leading-snug', extracao.produto === null && 'text-muted-foreground')}>
+        <h3 className={cn('line-clamp-2 min-w-0 pt-0.5 text-[1.125rem] font-semibold leading-tight', extracao.produto === null && 'text-muted-foreground')}>
           {extracao.produto ?? 'Etiqueta sem nome lido'}
         </h3>
         <Button
           variant="ghost"
           size="icon"
           aria-label="Descartar esta etiqueta"
-          className="-mr-2 -mt-2 text-muted-foreground"
+          className="-mr-2 -mt-2 shrink-0 text-muted-foreground"
           onClick={() => {
             fecharTeclado()
             atualizarCard.mutate({ mensagemId, dados: { ...dados, estado: 'descartado' } })
@@ -196,36 +215,32 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
         </Button>
       </div>
 
-      {/* Com o preço em dúvida as faixas lidas não são aplicadas; elas reaparecem como sugestão junto do campo de preço. */}
+      {/* Preços da etiqueta, lado a lado; o que vale para a quantidade escolhida fica marcado. Com o preço em dúvida eles viram atalhos junto do campo de preço. */}
       {faixas.length > 0 && !precoTravado ? (
-        <p className="dinheiro mt-0.5 whitespace-normal text-[0.875rem] text-muted-foreground">{linhaFaixas(faixas)}</p>
+        <ul className="mt-2.5 flex gap-1.5">
+          {faixasOrdenadas.map((faixa) => {
+            const vale = compra !== null && !precoManual && compra.faixa.tipo === faixa.tipo && compra.faixa.qtd_minima === faixa.qtd_minima && compra.faixa.cartao === faixa.cartao
+            return (
+              <li
+                key={`${faixa.tipo}-${faixa.qtd_minima}-${faixa.cartao}`}
+                className={cn('min-w-0 flex-1 rounded-2xl border px-2 py-1.5 text-center transition-colors duration-200', vale ? 'border-primary bg-primary/10' : 'border-border bg-background')}
+              >
+                <p className="truncate text-[0.75rem] leading-tight text-muted-foreground">{rotuloDaFaixa(faixa)}</p>
+                <p className="dinheiro truncate text-[1.0625rem] font-semibold leading-tight">
+                  {formatarReais(faixa.preco_centavos)}
+                  {unidade === 'kg' ? <span className="text-[0.75rem] font-normal">/kg</span> : null}
+                </p>
+              </li>
+            )
+          })}
+        </ul>
       ) : null}
 
       {problemas.length > 0 ? <Pendencias problemas={problemas} comoResolver={comoResolver} /> : null}
       {problemas.length === 0 && extracao.confianca === 'media' ? (
-        <Dica className="mt-3">A foto estava difícil de ler. Confira se o preço bate com o da etiqueta antes de adicionar.</Dica>
+        <Dica className="mt-2">A foto estava difícil de ler. Confira se o preço bate com o da etiqueta antes de adicionar.</Dica>
       ) : null}
-      {extracao.observacao ? <Dica className="mt-3">{extracao.observacao}</Dica> : null}
-
-      <div className="relative mt-3">
-        <label htmlFor={idSelecao} className="sr-only">
-          Item da lista
-        </label>
-        <select
-          id={idSelecao}
-          value={destino}
-          onChange={(e) => setDestino(e.target.value)}
-          className="h-11 w-full appearance-none truncate rounded-full border border-border bg-background pl-4 pr-10 text-[0.875rem] font-medium"
-        >
-          <option value={NOVO}>Novo item na lista</option>
-          {faltando.map((item) => (
-            <option key={item.id} value={item.id}>
-              Na lista: {item.nome}
-            </option>
-          ))}
-        </select>
-        <ChevronDown aria-hidden className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      </div>
+      {extracao.observacao ? <Dica className="mt-2">{extracao.observacao}</Dica> : null}
 
       {pedeNome ? (
         <Field
@@ -272,44 +287,7 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
         </div>
       ) : null}
 
-      {unidadeDefinida ? (
-        <>
-          <p className="mt-4 text-[0.875rem] font-medium">{unidade === 'kg' ? 'Quanto pesou?' : 'Quantos?'}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {botoesQuantidade(precoTravado ? [] : faixas, unidade).map((n) => {
-              const escolhido = qtd === n
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  aria-pressed={escolhido}
-                  onClick={() => {
-                    // Escolheu pelo botão: o campo "Outro" não precisa mais do teclado.
-                    fecharTeclado()
-                    setQtdTexto(String(n).replace('.', ','))
-                  }}
-                  className={cn(
-                    'dinheiro grid h-12 min-w-12 place-items-center rounded-full border px-3 text-[1rem] font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-saida',
-                    escolhido
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background text-foreground',
-                  )}
-                >
-                  {formatarQuantidade(n, unidade)}
-                </button>
-              )
-            })}
-            <Input
-              value={qtdTexto}
-              onChange={(e) => setQtdTexto(e.target.value)}
-              aria-label={unidade === 'kg' ? 'Peso em kg' : 'Outra quantidade'}
-              placeholder={unidade === 'kg' ? '0,000 kg' : 'Outro'}
-              inputMode={unidade === 'kg' ? 'decimal' : 'numeric'}
-              className="dinheiro h-12 min-w-24 flex-1 rounded-full text-center"
-            />
-          </div>
-        </>
-      ) : null}
+      {dica ? <Dica className="mt-2">{textoDica(dica, unidade)}</Dica> : null}
 
       {precoManual ? (
         <div className="mt-3">
@@ -350,26 +328,101 @@ export function ConfirmCard({ mensagemId, dados, lista, itens, somenteLeitura }:
         </div>
       ) : null}
 
-      {pronto ? (
-        <p aria-live="polite" className="dinheiro mt-4 whitespace-normal rounded-2xl bg-muted px-4 py-3 text-[1rem] font-semibold">
-          {linhaCalculo(qtd, unidade, preco, faixaAplicada, cartaoAplicado)}
-        </p>
+      {unidadeDefinida ? (
+        <>
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-[0.875rem] font-medium">{unidade === 'kg' ? 'Quanto pesou?' : 'Quantos?'}</p>
+            {/* Preço manual escolhido à mão tem volta; quando a leitura travou ou não há faixa para a quantidade, não. */}
+            {precoTravado || semFaixa ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  setPediuPrecoDiferente(!pediuPrecoDiferente)
+                  setPrecoTexto('')
+                }}
+                className="-mr-2 min-h-11 px-2 text-[0.8125rem] text-muted-foreground underline underline-offset-4"
+              >
+                {pediuPrecoDiferente ? 'usar preço da etiqueta' : 'preço diferente?'}
+              </button>
+            )}
+          </div>
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}>
+            {botoes.map((n) => {
+              const escolhido = qtd === n
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={escolhido}
+                  onClick={() => {
+                    // Escolheu pelo botão: o campo "Outro" não precisa mais do teclado.
+                    fecharTeclado()
+                    setQtdTexto(String(n).replace('.', ','))
+                  }}
+                  className={cn(
+                    'dinheiro grid h-11 place-items-center rounded-full border px-1 text-[1rem] font-medium transition-[background-color,border-color,color] duration-200 ease-saida',
+                    escolhido ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground',
+                  )}
+                >
+                  {formatarQuantidade(n, unidade)}
+                </button>
+              )
+            })}
+            <Input
+              value={qtdTexto}
+              onChange={(e) => setQtdTexto(e.target.value)}
+              aria-label={unidade === 'kg' ? 'Peso em kg' : 'Outra quantidade'}
+              placeholder={unidade === 'kg' ? 'kg' : 'Outro'}
+              inputMode={unidade === 'kg' ? 'decimal' : 'numeric'}
+              className="dinheiro h-11 min-w-0 rounded-full px-1 text-center"
+            />
+          </div>
+        </>
       ) : null}
 
-      {dica ? <Dica className="mt-3">{textoDica(dica, unidade)}</Dica> : null}
+      {/* Total: altura fixa, para o card não pular quando a conta aparece. */}
+      <div aria-live="polite" className="mt-3 flex min-h-[3.5rem] items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-2">
+        {pronto && total !== null ? (
+          <>
+            <p className="dinheiro min-w-0 whitespace-normal text-[0.8125rem] leading-snug text-muted-foreground">
+              {formatarQuantidade(qtd, unidade)} × {formatarReais(preco)}
+              <br />
+              {rotuloFaixa(faixaAplicada, cartaoAplicado)}
+            </p>
+            <p className="dinheiro shrink-0 text-[1.625rem] font-semibold leading-none">{formatarReais(total)}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[0.875rem] text-muted-foreground">{precoManual ? 'Informe o preço e a quantidade' : unidade === 'kg' ? 'Escolha o peso' : 'Escolha a quantidade'}</p>
+            <p className="dinheiro shrink-0 text-[1.625rem] font-semibold leading-none text-muted-foreground/50">R$ –</p>
+          </>
+        )}
+      </div>
 
-      <Button className="mt-4 w-full" disabled={!pronto} onClick={confirmar}>
+      <Button className="mt-3 w-full" disabled={!pronto} onClick={confirmar}>
         Adicionar
       </Button>
-      {precoManual ? null : (
-        <button
-          type="button"
-          onClick={() => setPediuPrecoDiferente(true)}
-          className="mx-auto mt-1 block min-h-11 px-3 text-sm text-muted-foreground underline underline-offset-4"
+
+      {/* Destino do item: quase sempre a sugestão serve, então fica por último e discreto. */}
+      <div className="relative mt-1">
+        <label htmlFor={idSelecao} className="sr-only">
+          Item da lista
+        </label>
+        <select
+          id={idSelecao}
+          value={destino}
+          onChange={(e) => setDestino(e.target.value)}
+          className="h-11 w-full appearance-none truncate rounded-full bg-transparent pl-4 pr-10 text-center text-[0.8125rem] text-muted-foreground"
         >
-          preço diferente?
-        </button>
-      )}
+          <option value={NOVO}>Novo item na lista</option>
+          {faltando.map((item) => (
+            <option key={item.id} value={item.id}>
+              Na lista: {item.nome}
+            </option>
+          ))}
+        </select>
+        <ChevronDown aria-hidden className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
     </div>
   )
 }

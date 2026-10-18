@@ -26,6 +26,7 @@ export function CamaraEtiqueta({ aoFotografar, aoFechar }: CamaraEtiquetaProps) 
   const [estado, setEstado] = useState<Estado>('iniciando')
   const [temLanterna, setTemLanterna] = useState(false)
   const [lanterna, setLanterna] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [piscar, setPiscar] = useState(false)
   const [congelada, setCongelada] = useState<string | null>(null)
 
@@ -50,8 +51,11 @@ export function CamaraEtiqueta({ aoFotografar, aoFechar }: CamaraEtiquetaProps) 
       faixa.current = trilha
       elemento.srcObject = fluxo
       await elemento.play().catch(() => undefined)
-      const capacidades = (trilha.getCapabilities?.() ?? {}) as CapacidadesComLanterna
-      setTemLanterna(capacidades.torch === true)
+      // Em vários Androids a capacidade só aparece depois que o vídeo já está rodando.
+      // Em celular o botão fica mesmo sem a confirmação: tocar tenta, e avisa se não der.
+      const confirmada = () => ((trilha.getCapabilities?.() ?? {}) as CapacidadesComLanterna).torch === true
+      setTemLanterna(confirmada() || navigator.maxTouchPoints > 0)
+      window.setTimeout(() => ativo && confirmada() && setTemLanterna(true), 600)
       // Foco contínuo: etiqueta de gôndola é perto e o foco automático padrão hesita.
       void trilha.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] }).catch(() => undefined)
       setEstado('pronta')
@@ -90,6 +94,8 @@ export function CamaraEtiqueta({ aoFotografar, aoFechar }: CamaraEtiquetaProps) 
       setLanterna(proxima)
     } catch {
       setTemLanterna(false)
+      setAviso('Este aparelho não deixa o navegador acender a lanterna.')
+      window.setTimeout(() => setAviso(null), 3500)
     }
   }
 
@@ -171,6 +177,8 @@ export function CamaraEtiqueta({ aoFotografar, aoFechar }: CamaraEtiquetaProps) 
                 ))}
               </div>
               <p role="status" className="text-center text-[0.9375rem] font-medium leading-snug drop-shadow">
+                {aviso ?? null}
+                {aviso ? <br /> : null}
                 {estado === 'iniciando' ? 'Abrindo a câmera…' : lendo ? 'Lendo etiqueta' : 'Enquadre a etiqueta de preço'}
                 {lendo
                   ? [0, 1, 2].map((i) => (

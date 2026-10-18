@@ -178,10 +178,12 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     autorId && autorId !== usuario.id ? primeiroNome(membros.find((m) => m.perfil_id === autorId)?.nome) || null : null
 
   const vazio = !isPending && total === 0
-  // Atalhos: campo vazio e a última fala é da IA (sem nada a caminho).
+  // Atalhos: campo vazio e a última fala é da IA (sem nada a caminho). Com um card de
+  // etiqueta aberto a tela é do card, e com o teclado aberto não sobra espaço.
   const ultima = mensagens?.[mensagens.length - 1]
+  const cardAberto = mensagens?.some((m) => m.dados?.tipo === 'etiqueta' && m.dados.estado === 'aberto') ?? false
   const mostrarAtalhos =
-    !gravacao && texto.trim() === '' && ultima?.papel === 'assistente' && visiveis.length === 0 && !esperandoIA
+    !gravacao && texto.trim() === '' && ultima?.papel === 'assistente' && visiveis.length === 0 && !esperandoIA && !cardAberto
   const podeFalar = vozDisponivel()
 
   return (
@@ -341,7 +343,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
 
         {/* Sugestões no fim da conversa: um toque envia, como se tivesse digitado. */}
         {mostrarAtalhos && !somenteLeitura ? (
-          <div className="mt-3 flex animate-surge flex-wrap justify-end gap-2">
+          <div className="mt-3 flex animate-surge flex-wrap justify-end gap-2 [.teclado-aberto_&]:hidden">
             {SUGESTOES.map((sugestao) => (
               <button
                 key={sugestao}
