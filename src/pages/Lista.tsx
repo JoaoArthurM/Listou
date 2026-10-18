@@ -1,5 +1,5 @@
 import { ArrowLeft, Ellipsis } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChatView } from '@/components/chat/ChatView'
 import { HistoricoCompra } from '@/components/chat/HistoricoCompra'
 import { Moldura } from '@/components/layout/Moldura'
@@ -18,6 +18,10 @@ import { useRealtime } from '@/hooks/useRealtime'
 import { resumir } from '@/lib/api'
 import { preverFaltantes } from '@/lib/previsao'
 import { navegar, voltar } from '@/lib/rota'
+import { cn } from '@/lib/utils'
+
+/** Botão redondo do cabeçalho: vidro fosco sobre a conversa, no mesmo formato do botão da câmera. */
+const botaoFlutuante = 'pointer-events-auto size-11 shrink-0 rounded-full border border-border/60 bg-card/85 shadow-cartao backdrop-blur-md hover:bg-card'
 
 type ListaPaginaProps = { id: string; aba: 'chat' | 'itens' }
 
@@ -33,6 +37,19 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   const aoVivo = useRealtime(id, { id: usuario.id, nome: perfil?.nome ?? '' })
   const precos = usePrecosAnteriores(id)
   useMercadoPeloLocal(lista ?? undefined)
+
+  // O cabeçalho flutua sobre a conversa (a mensagem passa por baixo dele, desfocada); a
+  // altura dele vira variável CSS para a conversa deixar o espaço certo no começo.
+  const [cabecalho, setCabecalho] = useState<HTMLElement | null>(null)
+  const envoltorio = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!cabecalho) return
+    const medir = () => envoltorio.current?.style.setProperty('--altura-cabecalho', `${cabecalho.offsetHeight}px`)
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(cabecalho)
+    return () => observador.disconnect()
+  }, [cabecalho])
 
   const resumo = resumir(itens)
   const faltando = resumo.itens_total - resumo.itens_comprados
@@ -69,40 +86,17 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
   // Carrinho mais o que falta, pelo preço da última compra de cada item.
   const previsao = preverFaltantes(itens, precos)
   const subtitulo = lista.mercado
+  const sobrepor = aba === 'chat' && !finalizada
 
   return (
     <Moldura
       rodape={
-        <TotalBar
-          resumo={resumo}
-          orcamentoCentavos={lista.orcamento_centavos}
-          aoFinalizar={finalizada ? undefined : () => { setAbrirResumo(true); setOpcoesAbertas(true) }}
-          semPreco={itens.filter((i) => i.comprado && i.total_centavos === null).length}
-          previstoCentavos={!finalizada && previsao.comPreco > 0 ? resumo.total_centavos + previsao.centavos : null}
-        />
-      }
-    >
-      <header className="shrink-0 px-3 pt-3">
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => voltar(finalizada ? '/historico' : '/')}>
-            <ArrowLeft className="size-6" />
-          </Button>
-          <div className="min-w-0 flex-1 text-center">
-            <h1 className="truncate text-[1.125rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
-            <div className="flex items-center justify-center gap-1.5">
-              {finalizada ? null : <StatusConexao canal={aoVivo.canal} compacto className="h-5" />}
-              {subtitulo ? <p className="truncate text-[0.875rem] text-muted-foreground">{subtitulo}</p> : null}
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" aria-label="Opções da lista" onClick={() => { setAbrirResumo(false); setOpcoesAbertas(true) }}>
-            <Ellipsis className="size-6" />
-          </Button>
-        </div>
-
-        <div className="mt-3 flex items-center gap-2 px-1">
+        <>
           <Segmented
             label="Visão da lista"
-            className="flex-1"
+            className="mb-2.5"
+            tom="escuro"
+            compacto
             value={aba}
             onChange={(nova) => navegar(nova === 'itens' ? `/lista/${id}?aba=itens` : `/lista/${id}`, { substituir: true })}
             options={
@@ -130,10 +124,40 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
                   ]
             }
           />
+          <TotalBar
+          resumo={resumo}
+          orcamentoCentavos={lista.orcamento_centavos}
+          aoFinalizar={finalizada ? undefined : () => { setAbrirResumo(true); setOpcoesAbertas(true) }}
+          semPreco={itens.filter((i) => i.comprado && i.total_centavos === null).length}
+          previstoCentavos={!finalizada && previsao.comPreco > 0 ? resumo.total_centavos + previsao.centavos : null}
+          />
+        </>
+      }
+    >
+      <div ref={envoltorio} className="relative flex min-h-0 flex-1 flex-col">
+      {/* Botões redondos e uma pílula com o nome, flutuando sobre a conversa: sem barra, a mensagem passa por trás. */}
+      <header
+        ref={setCabecalho}
+        className={cn('pointer-events-none z-10 flex shrink-0 items-center gap-2 px-3 pb-1 pt-3', sobrepor && 'absolute inset-x-0 top-0')}
+      >
+        <Button variant="ghost" size="icon" aria-label="Voltar" className={botaoFlutuante} onClick={() => voltar(finalizada ? '/historico' : '/')}>
+          <ArrowLeft className="size-6" />
+        </Button>
+        <div className="flex min-w-0 flex-1 justify-center">
+          <div className="pointer-events-auto flex min-h-11 min-w-0 max-w-full flex-col items-center justify-center rounded-3xl border border-border/60 bg-card/85 px-4 py-1 shadow-cartao backdrop-blur-md">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate text-[1.0625rem] font-medium leading-tight tracking-[-0.02em]">{lista.nome}</h1>
+              {finalizada ? null : <StatusConexao canal={aoVivo.canal} compacto className="h-5 shrink-0" />}
+            </div>
+            {subtitulo ? <p className="max-w-full truncate text-[0.8125rem] leading-tight text-muted-foreground">{subtitulo}</p> : null}
+          </div>
         </div>
+        <Button variant="ghost" size="icon" aria-label="Opções da lista" className={botaoFlutuante} onClick={() => { setAbrirResumo(false); setOpcoesAbertas(true) }}>
+          <Ellipsis className="size-6" />
+        </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col pt-3">
+      <div className={cn('flex min-h-0 flex-1 flex-col', !sobrepor && 'pt-2')}>
         {finalizada ? (
           aba === 'chat' ? (
             <HistoricoCompra lista={lista} />
@@ -145,6 +169,8 @@ export function ListaPagina({ id, aba }: ListaPaginaProps) {
         ) : (
           <ItensView lista={lista} itens={itens} resumo={resumo} precos={precos} carregando={carregandoItens} somenteLeitura={false} />
         )}
+      </div>
+
       </div>
 
       {opcoesAbertas ? <ListaConfigSheet lista={lista} itens={itens} iniciarNoResumo={abrirResumo} aoFechar={() => setOpcoesAbertas(false)} /> : null}

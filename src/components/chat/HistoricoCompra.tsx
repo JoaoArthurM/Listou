@@ -1,5 +1,5 @@
 import { Camera, Check } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useUsuario } from '@/hooks/sessao'
 import { useMembros } from '@/hooks/useListas'
 import { useColadoNoFim } from '@/hooks/useColadoNoFim'
@@ -8,6 +8,7 @@ import { chaveDoDia } from '@/lib/datas'
 import { linhaCalculo } from '@/lib/precos'
 import { primeiroNome } from '@/lib/utils'
 import type { Lista, Mensagem } from '@/types/app'
+import { BotaoIrAoFim, DISTANCIA_DO_BOTAO } from './BotaoIrAoFim'
 
 type HistoricoCompraProps = { lista: Lista }
 
@@ -92,9 +93,19 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
   }, [mensagens, membros, usuario.id])
 
   const { rolagem, conteudo, aoRolar } = useColadoNoFim(dias.length + ':' + (mensagens?.length ?? 0))
+  const [longe, setLonge] = useState(false)
 
   return (
-    <div ref={rolagem} onScroll={aoRolar} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      ref={rolagem}
+      onScroll={(e) => {
+        aoRolar()
+        const area = e.currentTarget
+        setLonge(area.scrollHeight - area.scrollTop - area.clientHeight > DISTANCIA_DO_BOTAO)
+      }}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1"
+    >
       <div ref={conteudo}>
       {isPending ? (
         <div aria-busy className="space-y-3">
@@ -134,6 +145,8 @@ export function HistoricoCompra({ lista }: HistoricoCompraProps) {
         </div>
       )}
       </div>
+    </div>
+    <BotaoIrAoFim visivel={longe} aoTocar={() => rolagem.current?.scrollTo({ top: rolagem.current.scrollHeight, behavior: 'smooth' })} />
     </div>
   )
 }

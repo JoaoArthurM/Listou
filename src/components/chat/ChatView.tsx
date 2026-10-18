@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowUp, ArrowUpRight, Clock, Mic, RotateCcw } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUsuario } from '@/hooks/sessao'
 import { useConexao } from '@/hooks/useConexao'
@@ -17,6 +17,7 @@ import { fecharTeclado } from '@/lib/teclado'
 import { listarNomes, primeiroNome } from '@/lib/utils'
 import { gravar, vozDisponivel, type Gravacao } from '@/lib/voz'
 import type { Item, Lista } from '@/types/app'
+import { BotaoIrAoFim, DISTANCIA_DO_BOTAO } from './BotaoIrAoFim'
 import { CameraButton } from './CameraButton'
 import { FotoEtiqueta } from './Foto'
 import { Gravador } from './Gravador'
@@ -81,6 +82,9 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
   if (iniciais.current === null && mensagens) iniciais.current = new Set(mensagens.map((m) => m.id))
 
   // A conversa abre no fim e acompanha: mensagem nova, "digitando" e fotos que terminam de carregar.
+  const [diaFlutuante, setDiaFlutuante] = useState<string | null>(null)
+  const sumirDia = useRef<number>()
+  const [longe, setLonge] = useState(false)
   const { rolagem, conteudo, aoRolar, irParaOFim } = useColadoNoFim(`${total}|${esperandoIA}|${digitando.length}|${outrosEsperando.length}`)
 
   // Os outros aparelhos ficam sabendo que há um pedido meu com a IA.
@@ -186,9 +190,31 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
     !gravacao && texto.trim() === '' && ultima?.papel === 'assistente' && visiveis.length === 0 && !esperandoIA && !cardAberto
   const podeFalar = vozDisponivel()
 
+  // Como no Telegram: ao rolar, uma pílula sob o cabeçalho diz de que dia é a mensagem
+  // que está passando por ali e some logo depois que a rolagem para.
+  function aoRolarComDia(evento: UIEvent<HTMLDivElement>) {
+    aoRolar()
+    const area = evento.currentTarget
+    window.clearTimeout(sumirDia.current)
+    const distancia = area.scrollHeight - area.scrollTop - area.clientHeight
+    setLonge(distancia > DISTANCIA_DO_BOTAO)
+    if (distancia < 80) return setDiaFlutuante(null)
+    const limite = area.getBoundingClientRect().top + parseFloat(getComputedStyle(area).paddingTop)
+    const mensagemNoTopo = Array.from(area.querySelectorAll<HTMLElement>('li[data-dia]')).find((li) => li.getBoundingClientRect().bottom > limite)
+    setDiaFlutuante(mensagemNoTopo?.dataset.dia ?? null)
+    sumirDia.current = window.setTimeout(() => setDiaFlutuante(null), 1400)
+  }
+
   return (
     <>
-      <div ref={rolagem} onScroll={aoRolar} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
+      <p
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 top-[calc(var(--altura-cabecalho,0px)+0.625rem)] z-20 flex justify-center transition-[opacity,transform] duration-300 ease-saida ${diaFlutuante ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0'}`}
+      >
+        <span className="rounded-full bg-foreground/80 px-3 py-1 text-xs font-medium capitalize text-background backdrop-blur">{diaFlutuante}</span>
+      </p>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div ref={rolagem} onScroll={aoRolarComDia} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-[calc(var(--altura-cabecalho,0px)+0.5rem)]">
         <div ref={conteudo}>
         {isPending ? (
           <div aria-busy className="space-y-3">
@@ -232,6 +258,7 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
             return (
               <li
                 key={mensagem.id}
+                data-dia={rotuloDoDia(quando)}
                 className={iniciais.current && !iniciais.current.has(mensagem.id) ? (minha ? 'animate-chega' : 'animate-surge') : undefined}
               >
                 {novoDia ? (
@@ -359,6 +386,9 @@ export function ChatView({ lista, itens, aoVivo, somenteLeitura }: ChatViewProps
           </div>
         ) : null}
         </div>
+      </div>
+
+      <BotaoIrAoFim visivel={longe} aoTocar={() => rolagem.current?.scrollTo({ top: rolagem.current.scrollHeight, behavior: 'smooth' })} />
       </div>
 
       {somenteLeitura ? null : (
